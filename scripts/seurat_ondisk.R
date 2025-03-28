@@ -1,6 +1,6 @@
 library(Seurat)
 library(qs)
-library(BPCells)
+library(BPCells) # if on O2, this package is installed in '/n/app/bcbio/R4.4.0_spatial_dev/'
 
 # Goal: use BPCells package to work with very large single cell datasets. Allows counts matrix to
 # be accessed on-disk in bit-packing compressed format rather than loaded into R memory, 
