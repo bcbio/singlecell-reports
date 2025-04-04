@@ -31,6 +31,10 @@ This code is in this ![](https://img.shields.io/badge/status-alpha-yellow) revis
 
 # This is a template for scRNA QC to present to your client. The actual QC can be done using our rshiny app:
 
+https://github.com/hbc/scRNAseq_qc_app/archive/refs/heads/main.zip
+
+# Please download the app, and execute it to identify parameters interactively
+
 # After you have decided on your QC metrics load your raw object (i.e. right after you first read data into seurat) and put the parameters.R file you got from the shiny app in the same folder as this rmd.
 ```
 
