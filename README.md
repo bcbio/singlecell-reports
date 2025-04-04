@@ -27,7 +27,7 @@ Then, the [`scripts/seurat_init.R`](scripts/seurat_init.R) script contains all t
 
 ## scATAC
 
-The Rmd that helps to visualize ATAC metrics is [`01_quality_assessment/scATAC_QC.Rmd`](01_quality_assessment/scATAC_QC.Rmd.
+The Rmd that helps to visualize ATAC metrics is [`01_quality_assessment/scATAC_QC.Rmd`](01_quality_assessment/scATAC_QC.Rmd).
 
 ## scRNA
 
