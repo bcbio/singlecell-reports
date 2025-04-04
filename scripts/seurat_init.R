@@ -17,6 +17,9 @@ data_dir <- "/path/to/cellranger/output/folders/"
 
 samples <- c("sample1",  "sample2",  "sample3")
 
+# Import experimental metadata
+metaexp <- read.csv("/path/to/experimental/metadata/meta.csv")
+
 ### Make individual seurat objects for each sample
 
 for (i in 1:length(samples)){
@@ -44,7 +47,7 @@ seurat_merge <- merge(x = get(seurat_ID[1]),
                       project = "my_scRNA_project")
 
 
-# Mitochondrial genes for mouse genome
+# Mitochondrial genes for mouse genome, change this to the right regular expression
 idx <- grep("^mt-", rownames(GetAssay(seurat_merge, "RNA")))
 rownames(GetAssay(seurat_merge, "RNA"))[idx]
 # Mitochondrial genes vs. nuclear genes ratio
@@ -57,9 +60,6 @@ seurat_merge$Log10GenesPerUMI <- log10(seurat_merge$nFeature_RNA) / log10(seurat
 # Extract cell level metadata
 metadata <- seurat_merge@meta.data
 metadata$barcode <- rownames(metadata)
-
-# Import experimental metadata
-metaexp <- read.csv("/path/to/experimental/metadata/meta.csv")
 
 # Check matching of IDs
 all(metaexp$sample %in% metadata$orig.ident)

@@ -1,10 +1,24 @@
+
+Templates with ![](https://img.shields.io/badge/status-stable-green) revision indicates that the components or processes have undergone comprehensive parameterization and testing.
+
+Templates with ![](https://img.shields.io/badge/status-alpha-yellow) revision indicates that the components or processes are currently being tested. There is some test data available, but there are parameters that need to be set up manually within the code.
+
+Templates with ![](https://img.shields.io/badge/status-draft-grey) revision indicates that the components or processes are not fully tested. There is no test data available, parameters need to be set up manually within the code, and specific code changes are required based on the data used.
+
 # Guideline for scRNAseq analysis
 
 Make sure there is a valid project name, and modify `information.R` with the right information for your project. You can use this file with any other Rmd to include the project/analysis information.
 
-# cell-ranger
+- Set the working directory to this file level. We recommend to use **Projects** in Rstudio.
+- Use `install_dependencies.R` to install all packages used in these reports.
 
-`pre-process-w-cellranger.md` contains step by step guidelines on how to run cellranger and load data into R. This `scripts/seurat_init.R` script contains all the pieces to go from cellranger output to Seurat obj. It is assuming a mouse genome.
+## nf-core
+
+`cellranger` outputs are in your [output directory](https://nf-co.re/scrnaseq/4.0.0/docs/output/#cellranger) under `results/cellranger`.
+
+## running cell-ranger by yourself
+
+[`pre-process-w-cellranger.md`](pre-process-w-cellranger.md) contains step by step guidelines on how to run cellranger and load data into R. This `scripts/seurat_init.R` script contains all the pieces to go from cellranger output to Seurat obj. It is assuming a mouse genome.
 
 # Quality Assessment
 
