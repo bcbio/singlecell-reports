@@ -18,7 +18,9 @@ Make sure there is a valid project name, and modify `information.R` with the rig
 
 ## running cell-ranger by yourself
 
-[`pre-process-w-cellranger.md`](pre-process-w-cellranger.md) contains step by step guidelines on how to run cellranger and load data into R. This `scripts/seurat_init.R` script contains all the pieces to go from cellranger output to Seurat obj. It is assuming a mouse genome.
+[`pre-process-w-cellranger.md`](pre-process-w-cellranger.md) contains step by step guidelines on how to run cellranger.
+
+Then, the `scripts/seurat_init.R` script contains all the pieces to go from cellranger output to Seurat obj. It is assuming a mouse genome. Alternatively, if you have an especially large single cell dataset, you may wish to construct a Seurat object where the counts matrix remains stored on-disk and is not loaded into R memory. The `scripts/seurat_ondisk.R` script can assist with this. 
 
 # Quality Assessment
 
