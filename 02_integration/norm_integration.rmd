@@ -26,11 +26,11 @@ library(rstudioapi)
 library(tidyverse)
 setwd(fs::path_dir(getSourceEditorContext()$path))
 # NOTE: This code will check version, this is our recommendation, it may work
-#.      other versions
-stopifnot(R.version$major>= 4) # requires R4
-if (compareVersion(R.version$minor,"3.1")<0) warning("We recommend >= R4.3.1") 
-stopifnot(compareVersion(as.character(BiocManager::version()), "3.18")>=0)
-stopifnot(compareVersion(as.character(packageVersion("Seurat")), "5.0.0")>=0)
+# .      other versions
+stopifnot(R.version$major >= 4) # requires R4
+if (compareVersion(R.version$minor, "3.1") < 0) warning("We recommend >= R4.3.1")
+stopifnot(compareVersion(as.character(BiocManager::version()), "3.18") >= 0)
+stopifnot(compareVersion(as.character(packageVersion("Seurat")), "5.0.0") >= 0)
 ```
 
 This code is in this ![](https://img.shields.io/badge/status-alpha-yellow) revision.
@@ -40,9 +40,9 @@ This code is in this ![](https://img.shields.io/badge/status-alpha-yellow) revis
 ## Cell cycle markers for c.elegans, human, mouse, D. rerio, and D. melanogaster can be found here: https://github.com/hbc/tinyatlas/tree/1e2136a35e773f14d97ae9cbdb6c375327b2dd2b/cell_cycle
 ## This files needs gene_name and phase columns to work with this template
 
-cell_cycle_file="https://github.com/bcbio/resources/raw/refs/heads/main/singlecell/human_cell_cycle.csv"
-seurat_obj="https://github.com/bcbio/bcbioR-test-data/raw/refs/heads/main/singlecell/tiny.rds"
-seurat_output="/tmp/seurat_clust.rds"
+cell_cycle_file <- "https://github.com/bcbio/resources/raw/refs/heads/main/singlecell/human_cell_cycle.csv"
+seurat_obj <- "https://github.com/bcbio/bcbioR-test-data/raw/refs/heads/main/singlecell/tiny.rds"
+seurat_output <- "/tmp/seurat_clust.rds"
 
 source(params$project_file)
 ```
@@ -61,28 +61,29 @@ library(clustree)
 library(ggprism)
 library(grafify)
 library(R.utils)
-#library(future)
+# library(future)
 
 ggplot2::theme_set(theme_prism(base_size = 12))
 # https://grafify-vignettes.netlify.app/colour_palettes.html
 # NOTE change colors here if you wish
-scale_colour_discrete <- function(...)
+scale_colour_discrete <- function(...) {
   scale_colour_manual(..., values = as.vector(grafify:::graf_palettes[["kelly"]]))
+}
 
 # Set seed for reproducibility
 set.seed(1454944673L)
 opts_chunk[["set"]](
-    audodep = TRUE,
-    cache = FALSE,
-    cache.lazy = FALSE,
-    error = TRUE,
-    echo = TRUE,
-    fig.height = 5L,
-    fig.retina = 2L,
-    fig.width = 9.6,
-    message = FALSE,
-    tidy = TRUE,
-    warning = TRUE
+  audodep = TRUE,
+  cache = FALSE,
+  cache.lazy = FALSE,
+  error = TRUE,
+  echo = TRUE,
+  fig.height = 5L,
+  fig.retina = 2L,
+  fig.width = 9.6,
+  message = FALSE,
+  tidy = TRUE,
+  warning = TRUE
 )
 ```
 
@@ -106,13 +107,13 @@ The Seurat object used as input for this report was prepared with the thresholds
 
 ```{r load_data, cache = TRUE}
 # Source cell cycle markers
-cc_markers = read_csv(cell_cycle_file)
+cc_markers <- read_csv(cell_cycle_file)
 stopifnot(c("gene_name", "phase") %in% colnames(cc_markers))
 
 # Loading QC'd object
-if (isUrl(seurat_obj)){
-  seurat_qc <- readRDS(url(seurat_obj))  
-}else{
+if (isUrl(seurat_obj)) {
+  seurat_qc <- readRDS(url(seurat_obj))
+} else {
   seurat_qc <- readRDS(seurat_obj)
 }
 
@@ -144,17 +145,18 @@ To enable meaningful visualization of the data, we apply a minimal normalization
 **We start with log normalization because it is good to observe the data and any trends using a simple transformation. More complex methods like SCT can alter the data in a way that is not as intuitive to interpret.**
 
 ```{r, eval=file.exists("seurat_lognorm.rds")}
-#NOTE run the chunk below to create this object, and loading will be used while
+# NOTE run the chunk below to create this object, and loading will be used while
 #     knitting to speed up the rendering
-seurat_lognorm = readRDS("seurat_lognorm.rds")
+seurat_lognorm <- readRDS("seurat_lognorm.rds")
 ```
 
 
 ```{r rna_norm0, eval=!exists("seurat_lognorm"), warning=FALSE, message=FALSE}
-#Normalize data
+# Normalize data
 seurat_lognorm <- NormalizeData(seurat_qc,
-                             normalization.method = "LogNormalize",
-                             scale.factor = 10000)
+  normalization.method = "LogNormalize",
+  scale.factor = 10000
+)
 
 # Find variable genes (largest dispersion in expression across cells)
 seurat_lognorm <- FindVariableFeatures(seurat_lognorm, nfeatures = 2000)
@@ -166,8 +168,7 @@ seurat_lognorm <- ScaleData(seurat_lognorm, model.use = "linear")
 seurat_lognorm <- RunPCA(seurat_lognorm)
 seurat_lognorm <- RunUMAP(seurat_lognorm, 1:40)
 
-saveRDS(seurat_lognorm, file="seurat_lognorm.rds")
-
+saveRDS(seurat_lognorm, file = "seurat_lognorm.rds")
 ```
 
 ## Examine highly variable genes
@@ -192,7 +193,7 @@ We then use the UMAP reduction to explore our dataset and assess how different v
 ```{r}
 ## Below is an example plot, change the group.by and split.by parameters to make plots with your own covariates.
 
-UMAPPlot(seurat_lognorm, group.by = "orig.ident") + ggtitle("UMAP") 
+UMAPPlot(seurat_lognorm, group.by = "orig.ident") + ggtitle("UMAP")
 ```
 
 ## Cell cycle
@@ -210,12 +211,13 @@ Unless cells very strongly cluster by phase of the cell cycle (which is not the 
 ## NOTE use the right column names for cc_markers if they are different than
 #   external_gene_name and phase
 seurat_lognorm <- CellCycleScoring(seurat_lognorm,
-                                g2m.features = cc_markers$gene_name[cc_markers$phase=="G2/M"],
-                                s.features = cc_markers$gene_name[cc_markers$phase=="S"])
+  g2m.features = cc_markers$gene_name[cc_markers$phase == "G2/M"],
+  s.features = cc_markers$gene_name[cc_markers$phase == "S"]
+)
 
 ## Plot cell cycle (grouped by) along with covariates (split.by).  Add in your covariates of interest
 
-UMAPPlot(seurat_lognorm, group.by = "Phase") + ggtitle("UMAP") 
+UMAPPlot(seurat_lognorm, group.by = "Phase") + ggtitle("UMAP")
 ```
 
 ## mitoRatio
@@ -230,36 +232,42 @@ signaturePlot <- function(seurat_object,
                           reduction = "umap",
                           split_var = NULL,
                           pt_size = 0.5) {
-  
   g1 <- FeaturePlot(seurat_object,
-                    features = gene_signature,
-                    reduction = reduction,
-                    split.by = split_var,
-                    order = TRUE,
-                    pt.size = pt_size,
-                    combine = FALSE)
-  
+    features = gene_signature,
+    reduction = reduction,
+    split.by = split_var,
+    order = TRUE,
+    pt.size = pt_size,
+    combine = FALSE
+  )
+
   min_val <- min(pull(seurat_object@meta.data, gene_signature))
   max_val <- max(pull(seurat_object@meta.data, gene_signature))
-  fix_params <- scale_color_gradientn(colours = c("grey80", "blue"), 
-                                      limits = c(min_val, max_val))
-  
-  g2 <- lapply(g1, function (x) { x + fix_params +
+  fix_params <- scale_color_gradientn(
+    colours = c("grey80", "blue"),
+    limits = c(min_val, max_val)
+  )
+
+  g2 <- lapply(g1, function(x) {
+    x + fix_params +
       theme_minimal() + # theme_void()
-      theme(legend.position = "bottom",
-            plot.title = element_text(hjust = 0.5)) + 
-      ggtitle("") })
-  
+      theme(
+        legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5)
+      ) +
+      ggtitle("")
+  })
+
   g2
-  
 }
 
 ### Here we apply the function. gene_signature is whatever qc metric you care about and split_var should be a covariate of interest. Adjust the titles to match the covariate groups. If you have more than 2 covariate groups then you will have multiple plots g[[3]]....g[[n]]
 
-g <- signaturePlot(seurat_lognorm, 
-                   gene_signature = "mitoRatio",
-                   split_var = "orig.ident")
-g[[1]] + ggtitle("S1") | g[[2]]+ ggtitle("S2")
+g <- signaturePlot(seurat_lognorm,
+  gene_signature = "mitoRatio",
+  split_var = "orig.ident"
+)
+g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
 
 ## nUMIs (nCount)
@@ -267,10 +275,11 @@ g[[1]] + ggtitle("S1") | g[[2]]+ ggtitle("S2")
 ```{r}
 ### Here we apply the function. gene_signature is whatever qc metric you care about and split_var should be a covariate of interest. Adjust the titles to match the covariate groups. If you have more than 2 covariate groups then you will have multiple plots g[[3]]....g[[n]]
 
-g <- signaturePlot(seurat_lognorm, 
-                   gene_signature = "nCount_RNA",
-                   split_var = "subj")
-g[[1]] + ggtitle("S1") | g[[2]]+ ggtitle("S2")
+g <- signaturePlot(seurat_lognorm,
+  gene_signature = "nCount_RNA",
+  split_var = "subj"
+)
+g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
 
 ## nGenes (nFeature)
@@ -278,10 +287,11 @@ g[[1]] + ggtitle("S1") | g[[2]]+ ggtitle("S2")
 ```{r}
 ### Here we apply the function. gene_signature is whatever qc metric you care about and split_var should be a covariate of interest. Adjust the titles to match the covariate groups. If you have more than 2 covariate groups then you will have multiple plots g[[3]]....g[[n]]
 
-g <- signaturePlot(seurat_lognorm, 
-                   gene_signature = "nFeature_RNA",
-                   split_var = "orig.ident")
-g[[1]] + ggtitle("S1") | g[[2]]+ ggtitle("S2")
+g <- signaturePlot(seurat_lognorm,
+  gene_signature = "nFeature_RNA",
+  split_var = "orig.ident"
+)
+g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
 
 ## Complexity
@@ -289,10 +299,11 @@ g[[1]] + ggtitle("S1") | g[[2]]+ ggtitle("S2")
 ```{r}
 ### Here we apply the function. gene_signature is whatever qc metric you care about and split_var should be a covariate of interest. Adjust the titles to match the covariate groups. If you have more than 2 covariate groups then you will have multiple plots g[[3]]....g[[n]]
 
-g <- signaturePlot(seurat_lognorm, 
-                   gene_signature = "Log10GenesPerUMI",
-                   split_var = "orig.ident")
-g[[1]] + ggtitle("S1") | g[[2]]+ ggtitle("S2")
+g <- signaturePlot(seurat_lognorm,
+  gene_signature = "Log10GenesPerUMI",
+  split_var = "orig.ident"
+)
+g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
 
 # SCT Normalization  {.tabset}
@@ -306,24 +317,26 @@ We searched for the top 3000 genes with the largest variability in expression le
 **We keep each sample separate for SCT normalization.**
 
 ```{r, eval=file.exists("seurat_sctnorm.rds")}
-#NOTE run the chunk below to create this object, and loading will be used while
+# NOTE run the chunk below to create this object, and loading will be used while
 #     knitting to speed up the rendering
-seurat_sctnorm = readRDS("seurat_sctnorm.rds")
+seurat_sctnorm <- readRDS("seurat_sctnorm.rds")
 ```
 
 ```{r eval=!exists("seurat_sctnorm"), warning=FALSE, message=FALSE}
-#NOTE: this should be ran previous rendering to prepare the object
+# NOTE: this should be ran previous rendering to prepare the object
 ## Note that this single command replaces NormalizeData(), ScaleData(), and FindVariableFeatures()
 
 ## SCT can be run with and without regressing out variables. Generally we do not regress out covariates. However, we provide both options below.
 seurat_lognorm[["RNA"]] <- split(seurat_lognorm[["RNA"]],
-                                 f = seurat_lognorm$orig.ident)
+  f = seurat_lognorm$orig.ident
+)
 
 seurat_sctnorm <- SCTransform(seurat_lognorm,
-                              vst.flavor = "v2",
-                              # vars.to.regress = c("mitoRatio")
-                              variable.features.n = 3000)
-saveRDS(seurat_sctnorm, file="seurat_sctnorm.rds")
+  vst.flavor = "v2",
+  # vars.to.regress = c("mitoRatio")
+  variable.features.n = 3000
+)
+saveRDS(seurat_sctnorm, file = "seurat_sctnorm.rds")
 ```
 
 ### Look at UMAPs post SCT
@@ -351,11 +364,12 @@ Unless cells very strongly cluster by phase of the cell cycle (which is not the 
 ## Cell cycle markers for c.elegans, human, mouse, D. rerio, and D. melanogaster can be found here: https://github.com/hbc/tinyatlas/tree/1e2136a35e773f14d97ae9cbdb6c375327b2dd2b/cell_cycle
 # Compute cell cycle score for each cell
 seurat_sctnorm <- CellCycleScoring(seurat_sctnorm,
-                                g2m.features = cc_markers$gene_name[cc_markers$phase=="G2/M"],
-                                s.features = cc_markers$gene_name[cc_markers$phase=="S"])
+  g2m.features = cc_markers$gene_name[cc_markers$phase == "G2/M"],
+  s.features = cc_markers$gene_name[cc_markers$phase == "S"]
+)
 
 ## Plot cell cycle (grouped by) along with covariates (split.by).  Add in your covariates of interest
-UMAPPlot(seurat_sctnorm, group.by = "Phase", split.by = "orig.ident") + ggtitle("UMAP") 
+UMAPPlot(seurat_sctnorm, group.by = "Phase", split.by = "orig.ident") + ggtitle("UMAP")
 ```
 
 ## mitoRatio
@@ -370,35 +384,41 @@ signaturePlot <- function(seurat_object,
                           reduction = "umap",
                           split_var = NULL,
                           pt_size = 0.5) {
-  
   g1 <- FeaturePlot(seurat_object,
-                    features = gene_signature,
-                    reduction = reduction,
-                    split.by = split_var,
-                    order = TRUE,
-                    pt.size = pt_size,
-                    combine = FALSE)
-  
+    features = gene_signature,
+    reduction = reduction,
+    split.by = split_var,
+    order = TRUE,
+    pt.size = pt_size,
+    combine = FALSE
+  )
+
   min_val <- min(pull(seurat_object@meta.data, gene_signature))
   max_val <- max(pull(seurat_object@meta.data, gene_signature))
-  fix_params <- scale_color_gradientn(colours = c("grey80", "blue"), 
-                                      limits = c(min_val, max_val))
-  
-  g2 <- lapply(g1, function (x) { x + fix_params +
+  fix_params <- scale_color_gradientn(
+    colours = c("grey80", "blue"),
+    limits = c(min_val, max_val)
+  )
+
+  g2 <- lapply(g1, function(x) {
+    x + fix_params +
       theme_minimal() + # theme_void()
-      theme(legend.position = "bottom",
-            plot.title = element_text(hjust = 0.5)) + 
-      ggtitle("") })
-  
+      theme(
+        legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5)
+      ) +
+      ggtitle("")
+  })
+
   g2
-  
 }
 
 ### Here we apply the function. gene_signature is whatever qc metric you care about and split_var should be a covariate of interest. Adjust the titles to match the covariate groups. If you have more than 2 covariate groups then you will have multiple plots g[[3]]....g[[n]]
 
-g <- signaturePlot(seurat_sctnorm, 
-                   gene_signature = "mitoRatio",
-                   split_var = "orig.ident")
+g <- signaturePlot(seurat_sctnorm,
+  gene_signature = "mitoRatio",
+  split_var = "orig.ident"
+)
 g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
 
@@ -407,9 +427,10 @@ g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```{r}
 ### Here we apply the function. gene_signature is whatever qc metric you care about and split_var should be a covariate of interest. Adjust the titles to match the covariate groups. If you have more than 2 covariate groups then you will have multiple plots g[[3]]....g[[n]]
 
-g <- signaturePlot(seurat_sctnorm, 
-                   gene_signature = "nCount_RNA",
-                   split_var = "orig.ident")
+g <- signaturePlot(seurat_sctnorm,
+  gene_signature = "nCount_RNA",
+  split_var = "orig.ident"
+)
 g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
 
@@ -418,21 +439,22 @@ g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```{r}
 ### Here we apply the function. gene_signature is whatever qc metric you care about and split_var should be a covariate of interest. Adjust the titles to match the covariate groups. If you have more than 2 covariate groups then you will have multiple plots g[[3]]....g[[n]]
 
-g <- signaturePlot(seurat_sctnorm, 
-                   gene_signature = "nFeature_RNA",
-                   split_var = "orig.ident")
+g <- signaturePlot(seurat_sctnorm,
+  gene_signature = "nFeature_RNA",
+  split_var = "orig.ident"
+)
 g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
 
 ## Complexity
 
 ```{r}
-
 ### Here we apply the function. gene_signature is whatever qc metric you care about and split_var should be a covariate of interest. Adjust the titles to match the covariate groups. If you have more than 2 covariate groups then you will have multiple plots g[[3]]....g[[n]]
 
-g <- signaturePlot(seurat_sctnorm, 
-                   gene_signature = "Log10GenesPerUMI",
-                   split_var = "orig.ident")
+g <- signaturePlot(seurat_sctnorm,
+  gene_signature = "Log10GenesPerUMI",
+  split_var = "orig.ident"
+)
 g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
 
@@ -442,13 +464,13 @@ g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ## CCA integration
 
 ```{r, eval=file.exists("seurat_cca.rds")}
-#NOTE run the chunck below to create this object, and loading will be used while
+# NOTE run the chunck below to create this object, and loading will be used while
 #     knitting to speed up the rendering
-seurat_cca= readRDS("seurat_cca.rds")
+seurat_cca <- readRDS("seurat_cca.rds")
 ```
 
 ```{r rna_cca, warning=FALSE, message=FALSE, eval=!exists("seurat_cca")}
-#NOTE: this should be ran previous rendering to prepare the object
+# NOTE: this should be ran previous rendering to prepare the object
 ## Note that this single command replaces NormalizeData(), ScaleData(), and FindVariableFeatures()
 
 ## SCT can be run with and without regressing out variables. Generally we do not regress out covariates. However, we provide both options below.
@@ -458,24 +480,33 @@ split_sctnorm <- SplitObject(seurat_lognorm, split.by = "orig.ident")
 # NOTE If we have a large dataset, then we might need to adjust the limit for allowable object sizes within R
 # options(future.globals.maxSize = 4000 * 1024^2)
 for (i in 1:length(split_sctnorm)) {
-    split_sctnorm[[i]] <- SCTransform(split_sctnorm[[i]],
-                                      vst.flavor = "v2",
-                                      # vars.to.regress = c("mitoRatio")
-                                      variable.features.n = 3000)
+  split_sctnorm[[i]] <- SCTransform(split_sctnorm[[i]],
+    vst.flavor = "v2",
+    # vars.to.regress = c("mitoRatio")
+    variable.features.n = 3000
+  )
 }
 
-integ_features <- SelectIntegrationFeatures(object.list = split_sctnorm,
-                                            nfeatures = 3000)
-split_sctnorm <- PrepSCTIntegration(object.list = split_sctnorm,
-                                   anchor.features = integ_features)
+integ_features <- SelectIntegrationFeatures(
+  object.list = split_sctnorm,
+  nfeatures = 3000
+)
+split_sctnorm <- PrepSCTIntegration(
+  object.list = split_sctnorm,
+  anchor.features = integ_features
+)
 
 # Find best buddies - can take a while to run
-integ_anchors <- FindIntegrationAnchors(object.list = split_sctnorm, 
-                                        normalization.method = "SCT", 
-                                        anchor.features = integ_features)
+integ_anchors <- FindIntegrationAnchors(
+  object.list = split_sctnorm,
+  normalization.method = "SCT",
+  anchor.features = integ_features
+)
 # Integrate across conditions
-seurat_cca <- IntegrateData(anchorset = integ_anchors, 
-                            normalization.method = "SCT")
+seurat_cca <- IntegrateData(
+  anchorset = integ_anchors,
+  normalization.method = "SCT"
+)
 
 # Rejoin the layers in the RNA assay that we split earlier
 seurat_cca[["RNA"]] <- JoinLayers(seurat_cca[["RNA"]])
@@ -484,20 +515,25 @@ seurat_cca[["RNA"]] <- JoinLayers(seurat_cca[["RNA"]])
 seurat_cca <- RunPCA(object = seurat_cca)
 
 # Run UMAP
-seurat_cca <- RunUMAP(seurat_cca, 
-                      reduction.name = "umap.cca",
-                      dims = 1:40)
+seurat_cca <- RunUMAP(seurat_cca,
+  reduction.name = "umap.cca",
+  dims = 1:40
+)
 
-saveRDS(seurat_cca, file="seurat_cca.rds")
+saveRDS(seurat_cca, file = "seurat_cca.rds")
 ```
 
 ```{r}
-p1 <- DimPlot(seurat_lognorm, group.by = "orig.ident", 
-              reduction = "umap") + 
+p1 <- DimPlot(seurat_lognorm,
+  group.by = "orig.ident",
+  reduction = "umap"
+) +
   theme(legend.position = "bottom") +
   ggtitle("pre-integration")
-p2 <- DimPlot(seurat_cca, group.by = "orig.ident", 
-              reduction = "umap.cca") + 
+p2 <- DimPlot(seurat_cca,
+  group.by = "orig.ident",
+  reduction = "umap.cca"
+) +
   theme(legend.position = "bottom") +
   ggtitle("post-integration")
 
@@ -513,39 +549,49 @@ To integrate, we will use the shared highly variable genes (identified using SCT
 We use [`Harmony`](https://portals.broadinstitute.org/harmony/articles/quickstart.html), which is based on a transformation of principal components (PCs) to find similarities across datasets. Here we group samples by the original sample id.
 
 ```{r rna_hrmny, eval=file.exists("seurat_harmony.rds")}
-#NOTE run the chunck below to create this object, and loading will be used while
+# NOTE run the chunck below to create this object, and loading will be used while
 #     knitting to speed up the rendering
-seurat_harmony = readRDS("seurat_harmony.rds")
+seurat_harmony <- readRDS("seurat_harmony.rds")
 ```
 
 ```{r, eval=!exists("seurat_harmony"), warning=FALSE, message=FALSE}
-## Here seurat will integrate on the level of sample id. If you want to integrate on other aspects the SCT normalization will need to be done with all of the data together.  
+## Here seurat will integrate on the level of sample id. If you want to integrate on other aspects the SCT normalization will need to be done with all of the data together.
 # seurat_sctnorm[["RNA"]] <- split(seurat_sctnorm[["RNA"]], f = seurat_sctnorm$orig.ident)
-seurat_harmony <- IntegrateLayers(object = seurat_sctnorm,
-                                  method = HarmonyIntegration,
-                                  orig.reduction = "pca",
-                                  new.reduction = 'harmony',
-                                  assay = "SCT", verbose = FALSE)
+seurat_harmony <- IntegrateLayers(
+  object = seurat_sctnorm,
+  method = HarmonyIntegration,
+  orig.reduction = "pca",
+  new.reduction = "harmony",
+  assay = "SCT", verbose = FALSE
+)
 seurat_harmony <- RunPCA(seurat_harmony)
-seurat_harmony <- RunUMAP(seurat_harmony, reduction = "harmony",
-                          dims = 1:40,
-                          reduction.name = "umap.harmony")
-saveRDS(seurat_harmony, file="seurat_harmony.rds")
+seurat_harmony <- RunUMAP(seurat_harmony,
+  reduction = "harmony",
+  dims = 1:40,
+  reduction.name = "umap.harmony"
+)
+saveRDS(seurat_harmony, file = "seurat_harmony.rds")
 ```
 
 ## Pre vs. Post integration 
 
 ```{r dimplot_both all,  echo=FALSE}
-p1 <- DimPlot(seurat_sctnorm, group.by = "orig.ident", 
-              reduction = "umap") + 
+p1 <- DimPlot(seurat_sctnorm,
+  group.by = "orig.ident",
+  reduction = "umap"
+) +
   theme(legend.position = "bottom") +
   ggtitle("pre-integration")
-p2 <- DimPlot(seurat_cca, group.by = "orig.ident", 
-              reduction = "umap.cca") + 
+p2 <- DimPlot(seurat_cca,
+  group.by = "orig.ident",
+  reduction = "umap.cca"
+) +
   theme(legend.position = "bottom") +
   ggtitle("post-integration CCA")
-p3 <- DimPlot(seurat_harmony, group.by = "orig.ident", 
-              reduction = "umap.harmony") + 
+p3 <- DimPlot(seurat_harmony,
+  group.by = "orig.ident",
+  reduction = "umap.harmony"
+) +
   theme(legend.position = "bottom") +
   ggtitle("post-integration Harmony")
 
@@ -575,9 +621,11 @@ After generating these clusters we will examine them below using a tree based ap
 seurat_clust <- FindNeighbors(seurat_cca, assay = "SCT", dims = 1:40)
 # check graph names names(seurat_harmony@graphs)
 # DefaultAssay(object = seurat_harmony[["pca"]])
-seurat_clust <- FindClusters(object = seurat_clust,
-                             resolution = c(0.1, 0.2, 0.4, 0.6, 0.8, 1.0),
-                             verbose = FALSE)
+seurat_clust <- FindClusters(
+  object = seurat_clust,
+  resolution = c(0.1, 0.2, 0.4, 0.6, 0.8, 1.0),
+  verbose = FALSE
+)
 ```
 
 ## Clustering Tree 
@@ -587,8 +635,8 @@ We build a clustering tree using the [clustree](https://lazappi.github.io/clustr
 ```{r, fig.height=10, fig.width=8}
 library(clustree)
 
-meta = seurat_clust@meta.data
-meta = na.omit(meta)
+meta <- seurat_clust@meta.data
+meta <- na.omit(meta)
 
 ## Change the prefix to match your clusters
 # NOTE: this if you have run HARMONY
@@ -610,9 +658,10 @@ We take a look at how the clusters look at resolutions 0.1, 0.2,0.4, and 0.6
 cluster_res <- 0.1
 Idents(object = seurat_clust) <- paste0(prefix_clu, cluster_res)
 DimPlot(seurat_clust,
-        reduction = show_this,
-        split.by = "orig.ident",
-        label = TRUE)
+  reduction = show_this,
+  split.by = "orig.ident",
+  label = TRUE
+)
 ```
 
 * * *
@@ -623,9 +672,10 @@ DimPlot(seurat_clust,
 cluster_res <- 0.2
 Idents(object = seurat_clust) <- paste0(prefix_clu, cluster_res)
 DimPlot(seurat_clust,
-        reduction = show_this,
-        split.by = "orig.ident",
-        label = TRUE)
+  reduction = show_this,
+  split.by = "orig.ident",
+  label = TRUE
+)
 ```
 
 * * *
@@ -636,9 +686,10 @@ DimPlot(seurat_clust,
 cluster_res <- 0.4
 Idents(object = seurat_clust) <- paste0(prefix_clu, cluster_res)
 DimPlot(seurat_clust,
-        reduction = show_this,
-        split.by = "orig.ident",
-        label = TRUE)
+  reduction = show_this,
+  split.by = "orig.ident",
+  label = TRUE
+)
 ```
 
 * * *
@@ -648,16 +699,17 @@ DimPlot(seurat_clust,
 cluster_res <- 0.6
 Idents(object = seurat_clust) <- paste0(prefix_clu, cluster_res)
 DimPlot(seurat_clust,
-        reduction = show_this,
-        split.by = "orig.ident",
-        label = TRUE)
+  reduction = show_this,
+  split.by = "orig.ident",
+  label = TRUE
+)
 ```
 
 * * *
 
 
 ```{r}
-saveRDS(seurat_clust, file=seurat_output)
+saveRDS(seurat_clust, file = seurat_output)
 ```
 
 # R session
