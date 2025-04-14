@@ -53,12 +53,19 @@ seurat_merge <- merge(
 )
 
 
-# Mitochondrial genes for mouse genome, change this to the right regular expression
-idx <- grep("^mt-", rownames(GetAssay(seurat_merge, "RNA")))
-rownames(GetAssay(seurat_merge, "RNA"))[idx]
+# Mitochondrial genes for human genome, change "MT-" to the right regular expression
+mt_idx <- grep("^MT-", Features(seurat_merge))
+Features(seurat_merge)[mt_idx]
 # Mitochondrial genes vs. nuclear genes ratio
-seurat_merge$mitoRatio <- PercentageFeatureSet(object = seurat_merge, pattern = "^mt-")
+seurat_merge$mitoRatio <- PercentageFeatureSet(object = seurat_merge, pattern = "^MT-")
 seurat_merge$mitoRatio <- seurat_merge@meta.data$mitoRatio / 100 # Divide by 100 for Ratio instead of Percentage
+
+# ribosomal genes for human genome, change "^RPS|^RPL" to right regular expression
+rb_idx <- grep("^RPS|^RPL", Features(seurat_merge))
+Features(seurat_merge)[rb_idx]
+seurat_merge$riboRatio <- PercentageFeatureSet(object = seurat_merge, pattern = "^RPS|^RPL")
+seurat_merge$riboRatio <- seurat_merge@meta.data$riboRatio / 100 # Divide by 100 for Ratio instead of Percentage
+
 
 # Number of genes per UMI for each cell
 seurat_merge$Log10GenesPerUMI <- log10(seurat_merge$nFeature_RNA) / log10(seurat_merge$nCount_RNA)
