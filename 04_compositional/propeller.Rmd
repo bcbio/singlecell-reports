@@ -24,18 +24,18 @@ library(rstudioapi)
 library(tidyverse)
 setwd(fs::path_dir(getSourceEditorContext()$path))
 # NOTE: This code will check version, this is our recommendation, it may work
-#.      other versions
-stopifnot(R.version$major>= 4) # requires R4
-if (compareVersion(R.version$minor,"3.1")<0) warning("We recommend >= R4.3.1") 
-stopifnot(compareVersion(as.character(BiocManager::version()), "3.18")>=0)
-stopifnot(compareVersion(as.character(packageVersion("Seurat")), "5.0.0")>=0)
+# .      other versions
+stopifnot(R.version$major >= 4) # requires R4
+if (compareVersion(R.version$minor, "3.1") < 0) warning("We recommend >= R4.3.1")
+stopifnot(compareVersion(as.character(BiocManager::version()), "3.18") >= 0)
+stopifnot(compareVersion(as.character(packageVersion("Seurat")), "5.0.0") >= 0)
 ```
 
 This code is in this ![](https://img.shields.io/badge/status-draft-grey) revision.
 
 
 ```{r setup, cache=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
-#knitr::opts_chunk$set(echo = TRUE)
+# knitr::opts_chunk$set(echo = TRUE)
 # Load libraries
 library(knitr)
 library(rmarkdown)
@@ -59,38 +59,41 @@ library(speckle)
 # Set seed for reproducibility
 set.seed(1454944673L)
 opts_chunk[["set"]](
-    audodep = TRUE,
-    cache = FALSE,
-    cache.lazy = FALSE,
-    error = TRUE,
-    echo = FALSE,
-    fig.height = 5L,
-    fig.retina = 2L,
-    fig.width = 11,
-    message = FALSE,
-    tidy = TRUE,
-    warning = FALSE
+  audodep = TRUE,
+  cache = FALSE,
+  cache.lazy = FALSE,
+  error = TRUE,
+  echo = FALSE,
+  fig.height = 5L,
+  fig.retina = 2L,
+  fig.width = 11,
+  message = FALSE,
+  tidy = TRUE,
+  warning = FALSE
 )
 
 ggplot2::theme_set(theme_prism(base_size = 12))
 # https://grafify-vignettes.netlify.app/colour_palettes.html
 # NOTE change colors here if you wish
-scale_colour_discrete <- function(...)
+scale_colour_discrete <- function(...) {
   scale_colour_manual(..., values = as.vector(grafify:::graf_palettes[["kelly"]]))
+}
 
- if (future::supportsMulticore()) {
-   future::plan(future::multicore)
- } else {
-   future::plan(future::multisession)
- }
+if (future::supportsMulticore()) {
+  future::plan(future::multicore)
+} else {
+  future::plan(future::multisession)
+}
 ```
 
 ```{r sanitize_datatable}
-sanitize_datatable = function(df, ...) {
- # remove dashes which cause wrapping
- DT::datatable(df, ..., rownames=gsub("-", "_", rownames(df)),
-                   colnames=gsub("-", "_", colnames(df)),
-                 options = list(scrollX = TRUE,...))
+sanitize_datatable <- function(df, ...) {
+  # remove dashes which cause wrapping
+  DT::datatable(df, ...,
+    rownames = gsub("-", "_", rownames(df)),
+    colnames = gsub("-", "_", colnames(df)),
+    options = list(scrollX = TRUE, ...)
+  )
 }
 ```
 
@@ -100,7 +103,7 @@ Read in the full dataset Seurat object and subset to keep only cells from the co
 ```{r load-data}
 seurat <- readRDS("data.rds")
 
-subset_seurat <-  subset(x = seurat, subset= condition %in% c("Ctrl","Treat"))
+subset_seurat <- subset(x = seurat, subset = condition %in% c("Ctrl", "Treat"))
 
 Idents(object = subset_seurat) <- "celltype"
 
@@ -123,12 +126,13 @@ table(meta$condition_sample, meta$celltype)
 ```{r run-propeller}
 # working code; takes into account cell numbers
 # NOTE adapt with your variables of interest
-propres <- propeller(subset_seurat, sample=subset_seurat$sample,
-                     clusters = subset_seurat$celltype,
-                     group = subset_seurat$condition)
+propres <- propeller(subset_seurat,
+  sample = subset_seurat$sample,
+  clusters = subset_seurat$celltype,
+  group = subset_seurat$condition
+)
 
 sanitize_datatable(propres)
-
 ```
 
 ## Proportions of cells table
@@ -137,23 +141,24 @@ To understand discordance with sccomp results, let's evaluate proportions and va
 
 
 ```{r}
-props <- getTransformedProps(meta$celltype, 
-                                 meta$condition_sample, 
-                                 transform="logit")
+props <- getTransformedProps(meta$celltype,
+  meta$condition_sample,
+  transform = "logit"
+)
 
 props$Proportions
 ```
 
 ```{r extracode, eval=FALSE}
-meta_propeller<- meta %>% 
+meta_propeller <- meta %>%
   group_by(condition, sample) %>%
   distinct(sample)
 
-designAS <- model.matrix(~ meta_propeller$condition) 
+designAS <- model.matrix(~ meta_propeller$condition)
 colnames(designAS) <- c("Ctrl", "Treat")
 
 fit <- lmFit(props$TransformedProps, designAS)
-fit <- eBayes(fit, robust=TRUE)
+fit <- eBayes(fit, robust = TRUE)
 
 topTable(fit)
 ```

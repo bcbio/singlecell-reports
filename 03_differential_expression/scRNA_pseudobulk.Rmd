@@ -32,17 +32,17 @@ library(rstudioapi)
 library(tidyverse)
 setwd(fs::path_dir(getSourceEditorContext()$path))
 # NOTE: This code will check version, this is our recommendation, it may work
-#.      other versions
-stopifnot(R.version$major>= 4) # requires R4
-if (compareVersion(R.version$minor,"3.1")<0) warning("We recommend >= R4.3.1") 
-stopifnot(compareVersion(as.character(BiocManager::version()), "3.18")>=0)
-stopifnot(compareVersion(as.character(packageVersion("Seurat")), "5.0.0")>=0)
+# .      other versions
+stopifnot(R.version$major >= 4) # requires R4
+if (compareVersion(R.version$minor, "3.1") < 0) warning("We recommend >= R4.3.1")
+stopifnot(compareVersion(as.character(BiocManager::version()), "3.18") >= 0)
+stopifnot(compareVersion(as.character(packageVersion("Seurat")), "5.0.0") >= 0)
 ```
 
 ```{r setup, cache=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 # Load libraries'
-#library(Matrix)
+# library(Matrix)
 library(SeuratObject)
 library(Seurat)
 library(harmony)
@@ -69,28 +69,30 @@ library(bcbioR)
 ggplot2::theme_set(theme_prism(base_size = 12))
 # https://grafify-vignettes.netlify.app/colour_palettes.html
 # NOTE change colors here if you wish
-scale_colour_discrete <- function(...)
+scale_colour_discrete <- function(...) {
   scale_colour_manual(..., values = as.vector(grafify:::graf_palettes[["kelly"]]))
-scale_fill_discrete <- function(...)
+}
+scale_fill_discrete <- function(...) {
   scale_fill_manual(..., values = as.vector(grafify:::graf_palettes[["kelly"]]))
+}
 
-#options(ggplot2.discrete.colour= )
+# options(ggplot2.discrete.colour= )
 
 # Set seed for reproducibility
 set.seed(1454944673L)
 opts_chunk[["set"]](
-    audodep = TRUE,
-    cache = FALSE,
-    cache.lazy = FALSE,
-    error = TRUE,
-    echo = TRUE,
-    warning = FALSE,
-    fig.height = 5L,
-    fig.retina = 2L,
-    fig.width = 9.6,
-    message = FALSE,
-    tidy = TRUE,
-    warning = TRUE
+  audodep = TRUE,
+  cache = FALSE,
+  cache.lazy = FALSE,
+  error = TRUE,
+  echo = TRUE,
+  warning = FALSE,
+  fig.height = 5L,
+  fig.retina = 2L,
+  fig.width = 9.6,
+  message = FALSE,
+  tidy = TRUE,
+  warning = TRUE
 )
 
 source(params$project_file)
@@ -134,9 +136,9 @@ Using a pseudobulk approach involves the following steps:
 
 ```{r load_data, cache = FALSE}
 # Loading object
-if (isUrl(seurat_obj)){
-  seurat <- readRDS(url(seurat_obj))  
-}else{
+if (isUrl(seurat_obj)) {
+  seurat <- readRDS(url(seurat_obj))
+} else {
   seurat <- readRDS(seurat_obj)
 }
 
@@ -158,9 +160,9 @@ seurat@meta.data %>% group_by(orig.ident) %>% summarize(n_bins = n()) %>% saniti
 ```{r rna_norm0, warning=FALSE, message=FALSE}
 meta_columns <- c("orig.ident", column)
 meta <- seurat@meta.data %>%
-            select(meta_columns) %>%
-            unique() %>%
-            remove_rownames()
+  select(meta_columns) %>%
+  unique() %>%
+  remove_rownames()
 
 meta %>% sanitize_datatable()
 ```
@@ -190,18 +192,19 @@ n_cells <- seurat@meta.data %>%
 #n_cells$sample <- str_replace(n_cells$sample, "_", "-")
 
 ## extra check if aggregated sample names start with numbers
-n_cells$sample <- ifelse(grepl("^\\d", n_cells$sample), paste0("g",n_cells$sample), n_cells$sample)
+n_cells$sample <- ifelse(grepl("^\\d", n_cells$sample), paste0("g", n_cells$sample), n_cells$sample)
 
 
-meta_bulk <- bulk@meta.data 
+meta_bulk <- bulk@meta.data
 meta_bulk$sample <- str_replace_all(meta_bulk$sample, "-", "_")
 
 meta_bulk <- meta_bulk %>% left_join(n_cells, by=c("sample", column))
+
 rownames(meta_bulk) <- meta_bulk$orig.ident
 bulk@meta.data <- meta_bulk
 
 # Turn column into a factor
-#bulk[[column]] <- as.factor(bulk[[column]])
+# bulk[[column]] <- as.factor(bulk[[column]])
 # test for consistency
 
 stopifnot(all(Cells(bulk) == row.names(bulk@meta.data)))
@@ -246,7 +249,7 @@ formula <- as.formula(paste0("~ ", " + ", column))
 dds_to_use <- DESeqDataSetFromMatrix(cluster_counts, bulk@meta.data, design = formula)
 de <- DESeq(dds_to_use)
 DESeq2::plotDispEsts(de)
-norm_matrix <- as.data.frame(counts(de, normalized=T))
+norm_matrix <- as.data.frame(counts(de, normalized = T))
 
 vsd <- vst(de)
 vsd_matrix <- assay(vsd)
@@ -264,24 +267,31 @@ The LRT is useful for testing multiple terms at once, for example testing 3 or m
 # NOTE We recommend LRT for time series
 
 # resultsNames(de) # check the order is right
-names_to_use=lapply(contrasts, function(contrast){coef = paste0(contrast[1], "_", contrast[2], "_vs_", contrast[3])})
-names(contrasts)=names_to_use
-de_list=lapply(contrasts, function(contrast){
-  resLFC = results(de, contrast=contrast)
-  coef = paste0(contrast[1], "_", contrast[2], "_vs_", contrast[3])
+names_to_use <- lapply(contrasts, function(contrast) {
+  coef <- paste0(contrast[1], "_", contrast[2], "_vs_", contrast[3])
+})
+names(contrasts) <- names_to_use
+de_list <- lapply(contrasts, function(contrast) {
+  resLFC <- results(de, contrast = contrast)
+  coef <- paste0(contrast[1], "_", contrast[2], "_vs_", contrast[3])
   # resLFCS <- lfcShrink(de, coef=coef, type="apeglm")
-  resLFCS <- lfcShrink(de, contrast=contrast, type="ash")
-  
+  resLFCS <- lfcShrink(de, contrast = contrast, type = "ash")
+
   res <- as.data.frame(resLFCS) %>%
-    rownames_to_column('gene_id') %>% 
+    rownames_to_column("gene_id") %>%
     dplyr::rename(lfc = log2FoldChange) %>%
-    mutate(pi = abs(lfc) * -log10(padj)) %>% arrange(-pi)
-  
+    mutate(pi = abs(lfc) * -log10(padj)) %>%
+    arrange(-pi)
+
   ## Filter out genes that have no expression or were filtered out by DESEQ2
-  res <- res[res$baseMean>0,] %>% drop_na(padj) %>% drop_na(pvalue)
-  
-  res_sig <- res %>% filter(padj < 0.05) %>% arrange(padj) 
-  results=list(lfc=resLFC, lfcs=resLFCS, all=res, sig=res_sig)
+  res <- res[res$baseMean > 0, ] %>%
+    drop_na(padj) %>%
+    drop_na(pvalue)
+
+  res_sig <- res %>%
+    filter(padj < 0.05) %>%
+    arrange(padj)
+  results <- list(lfc = resLFC, lfcs = resLFCS, all = res, sig = res_sig)
   return(results)
 })
 
@@ -299,11 +309,11 @@ This plot can help to:
 -   Visualize data dispersion: The distribution of points along the A-axis gives a sense of the spread of expression levels and any patterns or anomalies in the dataset.
 
 ```{r after_lfc_shrink, results='asis', message=F, warning=F}
-for (contrast in names(de_list)){
+for (contrast in names(de_list)) {
   cat("### ", contrast, "\n\n")
-  p1=degMA(as.DEGSet(de_list[[contrast]]$lfc)) + ggtitle('Before LFC Shrinking')
+  p1 <- degMA(as.DEGSet(de_list[[contrast]]$lfc)) + ggtitle("Before LFC Shrinking")
   print(p1)
-  p2=degMA(as.DEGSet(de_list[[contrast]]$lfcs), limit = 2) + ggtitle('After LFC Shrinking')
+  p2 <- degMA(as.DEGSet(de_list[[contrast]]$lfcs), limit = 2) + ggtitle("After LFC Shrinking")
   print(p2)
   cat("\n\n")
 }
@@ -314,21 +324,22 @@ for (contrast in names(de_list)){
 This volcano plot shows the genes that are significantly up- and down-regulated as a result of the analysis comparison. The points highlighted in red are genes that have padj \< 0.05 and a log2-fold change \> 1. Points in blue have a padj \< 0.05 and a log2-fold change \< 1 and points in green have a padj \> 0.05 and a log2-fold change \> 2. Grey points are non-significant. The dashed lines correspond to the cutoff values of log2 foldchance and padj that we have chosen.
 
 ```{r volcano_plot, fig.height=6, results='asis'}
-# degVolcano(res_mod[,c('lfc', 'padj')], plot_text = show) 
-for (contrast in names(de_list)){
+# degVolcano(res_mod[,c('lfc', 'padj')], plot_text = show)
+for (contrast in names(de_list)) {
   cat("### ", contrast, "\n\n")
   res <- de_list[[contrast]][["all"]]
   res_mod <- res
   show <- as.data.frame(res_mod[1:10, c("lfc", "padj", "gene_id")])
-  p1=EnhancedVolcano(res_mod,
-                  lab= res_mod$gene_id, 
-                  pCutoff = 0.05, 
-                  selectLab = c(show$gene_id),
-                  FCcutoff = 0.5,
-                  x = 'lfc',
-                  y = 'padj', 
-                  title=contrast,
-                  subtitle = "", drawConnectors = T,  max.overlaps = Inf) 
+  p1 <- EnhancedVolcano(res_mod,
+    lab = res_mod$gene_id,
+    pCutoff = 0.05,
+    selectLab = c(show$gene_id),
+    FCcutoff = 0.5,
+    x = "lfc",
+    y = "padj",
+    title = contrast,
+    subtitle = "", drawConnectors = T, max.overlaps = Inf
+  )
   print(p1)
   cat("\n\n")
 }
@@ -338,7 +349,7 @@ for (contrast in names(de_list)){
 
 ```{r heapmap, results='asis'}
 ### Run pheatmap using the metadata data frame for the annotation
-for (contrast in names(de_list)){
+for (contrast in names(de_list)) {
   cat("### ", contrast, "\n\n")
   res_sig = de_list[[contrast]][["sig"]]
   ma=norm_matrix[res_sig$gene_id,]
@@ -376,9 +387,9 @@ tagList(dt_list)
 ## Plot top 16 genes - pseudobulk {.tabset}
 
 ```{r top n DEGs pseudobulk, fig.height = 6, fig.width = 8, results='asis'}
-n = 16
+n <- 16
 
-for (contrast in names(de_list)){
+for (contrast in names(de_list)) {
   cat("### ", contrast, "\n\n")
   res_sig = de_list[[contrast]][["sig"]]
   
@@ -410,8 +421,7 @@ for (contrast in names(de_list)){
 ## Plot top 16 genes - single cell {.tabset}
 
 ```{r top n DEGs single cell, fig.height = 6, fig.width = 8, results='asis'}
-
-n = 16
+n <- 16
 
 # subset seurat object to include only sig DE genes, helps with speed
 top_n_all <- lapply(names(de_list), function(contrast){
@@ -440,10 +450,9 @@ for (contrast in names(de_list)){
   } else {
     print('Need at least 1 DEG to make plot')
   }
-  
+
   cat("\n\n")
 }
-
 ```
 
 # Methods

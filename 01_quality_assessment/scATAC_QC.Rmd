@@ -34,18 +34,18 @@ params:
 library(rstudioapi)
 setwd(fs::path_dir(getSourceEditorContext()$path))
 # NOTE: This code will check version, this is our recommendation, it may work
-#.      other versions
-stopifnot(R.version$major>= 4) # requires R4
-if (compareVersion(R.version$minor,"3.1")<0) warning("We recommend >= R4.3.1") 
-stopifnot(compareVersion(as.character(BiocManager::version()), "3.18")>=0)
-stopifnot(compareVersion(as.character(packageVersion("Seurat")), "5.0.0")>=0)
+# .      other versions
+stopifnot(R.version$major >= 4) # requires R4
+if (compareVersion(R.version$minor, "3.1") < 0) warning("We recommend >= R4.3.1")
+stopifnot(compareVersion(as.character(BiocManager::version()), "3.18") >= 0)
+stopifnot(compareVersion(as.character(packageVersion("Seurat")), "5.0.0") >= 0)
 ```
 
 This code is in this ![](https://img.shields.io/badge/status-alpha-yellow) revision.
 
 ```{r source_params, echo = F}
-metadata_fn=''
-se_object=''
+metadata_fn <- ""
+se_object <- ""
 ```
 
 ```{r load_libraries, cache = FALSE, message = FALSE, warning=FALSE}
@@ -60,16 +60,16 @@ library(qs)
 library(bcbioR)
 ggplot2::theme_set(theme_light(base_size = 14))
 opts_chunk[["set"]](
-    cache = FALSE,
-    cache.lazy = FALSE,
-    dev = c("png", "pdf"),
-    error = TRUE,
-    highlight = TRUE,
-    message = FALSE,
-    prompt = FALSE,
-    tidy = FALSE,
-    warning = FALSE,
-    fig.height = 4)
+  cache = FALSE,
+  cache.lazy = FALSE,
+  dev = c("png", "pdf"),
+  error = TRUE,
+  highlight = TRUE,
+  message = FALSE,
+  prompt = FALSE,
+  tidy = FALSE,
+  warning = FALSE,
+  fig.height = 4)
 ```
 
 
@@ -85,15 +85,15 @@ opts_chunk[["set"]](
 #'
 #' @author Andreas Scharmueller \email{andschar@@protonmail.com}
 #'
-subchunkify = function(pl,
-                       fig.height = 7,
-                       fig.width = 5,
-                       chunk_name = 'plot') {
-  pl_deparsed = paste0(deparse(function() {
+subchunkify <- function(pl,
+                        fig.height = 7,
+                        fig.width = 5,
+                        chunk_name = "plot") {
+  pl_deparsed <- paste0(deparse(function() {
     pl
-  }), collapse = '')
-  
-  sub_chunk = paste0(
+  }), collapse = "")
+
+  sub_chunk <- paste0(
     "```{r ",
     chunk_name,
     ", fig.height=",
@@ -107,7 +107,7 @@ subchunkify = function(pl,
     ")()",
     "\n```"
   )
-  
+
   cat(knitr::knit(
     text = knitr::knit_expand(text = sub_chunk),
     quiet = TRUE
@@ -117,16 +117,18 @@ subchunkify = function(pl,
 
 
 ```{r sanitize-datatable}
-sanitize_datatable = function(df, ...) {
- # remove dashes which cause wrapping
- DT::datatable(df, ..., rownames=gsub("-", "_", rownames(df)),
-                   colnames=gsub("-", "_", colnames(df)))
+sanitize_datatable <- function(df, ...) {
+  # remove dashes which cause wrapping
+  DT::datatable(df, ...,
+    rownames = gsub("-", "_", rownames(df)),
+    colnames = gsub("-", "_", colnames(df))
+  )
 }
 ```
 
 
 ```{r not_in}
-`%!in%` = Negate(`%in%`)
+`%!in%` <- Negate(`%in%`)
 ```
 
 
@@ -142,35 +144,37 @@ sanitize_datatable = function(df, ...) {
 # Samples and metadata
 
 ```{r load_metadata}
-meta_df=read_csv(metadata_fn) %>% mutate(sample = tolower(description)) %>%
+meta_df <- read_csv(metadata_fn) %>%
+  mutate(sample = tolower(description)) %>%
   dplyr::select(-description)
 
 ggplot(meta_df, aes(sample_type, fill = sample_type)) +
-  geom_bar() + ylab("") + xlab("") +
+  geom_bar() +
+  ylab("") +
+  xlab("") +
   scale_fill_cb_friendly()
 ```
 
 
 ```{r  show-metadata}
-se <- readRDS(se_object) #local
+se <- readRDS(se_object) # local
 
 
-metrics <- metadata(se)$metrics %>% 
-    full_join(meta_df , by = c("sample" = "sample"))
+metrics <- metadata(se)$metrics %>%
+  full_join(meta_df, by = c("sample" = "sample"))
 
 meta_sm <- meta_df %>%
   as.data.frame() %>%
   column_to_rownames("sample")
 
 meta_sm %>% sanitize_datatable()
-
 ```
 
 ```{r create_or_read_seurat_obj}
-filename <- 'data/scATAC_seurat.rds'
-if (!file.exists(filename)){
-  
-}else{
+filename <- "data/scATAC_seurat.rds"
+if (!file.exists(filename)) {
+
+} else {
   seurat <- readRDS(filename)
 }
 ```
@@ -188,7 +192,7 @@ VlnPlot(seurat, features = "nCount_MACS2peaks", ncol = 1, pt.size = 0) +
   xlab("") +
   ylab("Reads")
 
-cat('\n\n')
+cat("\n\n")
 ```
 ## Detected peaks per cell
 
@@ -214,27 +218,27 @@ This metric represents the total number of fragments (= reads) mapping within a 
 ```{r results='asis', warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 DefaultAssay(seurat) <- "MACS2peaks"
 
-cat('#### Histogram \n\n')
-seurat@meta.data %>% 
-  ggplot(aes(x = atac_peak_region_fragments)) + 
-  geom_histogram() + 
-  facet_wrap(~sample, scale = 'free') +
+cat("#### Histogram \n\n")
+seurat@meta.data %>%
+  ggplot(aes(x = atac_peak_region_fragments)) +
+  geom_histogram() +
+  facet_wrap(~sample, scale = "free") +
   geom_vline(xintercept = params$min_PRF)
 ```
 
 
 ```{r results='asis', warning=FALSE, message=FALSE, fig.width=12}
-cat('\n#### Violin plot\n\n')
+cat("\n#### Violin plot\n\n")
 VlnPlot(
   object = seurat,
-  features = 'atac_peak_region_fragments',
+  features = "atac_peak_region_fragments",
   pt.size = 0
-) + ylab('Total number of fragments in peaks') + 
-  NoLegend() + 
+) + ylab("Total number of fragments in peaks") +
+  NoLegend() +
   geom_hline(yintercept = params$min_PRF) + xlab("") +
   scale_fill_cb_friendly()
 
-cat('\n\n')
+cat("\n\n")
 ```
 
 ### Fraction of fragments in peaks
@@ -244,13 +248,13 @@ It represents the fraction of all fragments that fall within ATAC-seq peaks. Cel
 ```{r results='asis'}
 VlnPlot(
   object = seurat,
-  features = 'pct_reads_in_peaks',
+  features = "pct_reads_in_peaks",
   pt.size = 0
 ) + NoLegend() + xlab("") +
   scale_fill_cb_friendly() +
-  geom_hline(yintercept = params$min_FRiP) 
+  geom_hline(yintercept = params$min_FRiP)
 
-cat('\n\n')
+cat("\n\n")
 ```
 
 
@@ -262,10 +266,10 @@ The ENCODE project has defined an ATAC-seq targeting score based on the ratio of
 ```{r results='asis'}
 VlnPlot(
   object = seurat,
-  features = 'TSS.enrichment',
+  features = "TSS.enrichment",
   pt.size = 0
 ) + scale_fill_cb_friendly() + NoLegend() + xlab("")
-cat('\n\n')
+cat("\n\n")
 ```
 The following tabs show the TSS enrichment score distribution for each sample. Cells with high-quality ATAC-seq data should show a clear peak in reads at the TSS, with a decay the further we get from it.
 
@@ -273,12 +277,12 @@ Each plot is split between cells with a high or low global TSS enrichment score 
 
 ```{r results='asis'}
 seurat$TSS.group <- ifelse(seurat$TSS.enrichment > params$min_TSS, "High", "Low")
-Idents(seurat) <- 'sample'
-for (sample in levels(seurat$sample)){
-  cat('####', sample, '\n\n')
+Idents(seurat) <- "sample"
+for (sample in levels(seurat$sample)) {
+  cat("####", sample, "\n\n")
   p <- TSSPlot(subset(x = seurat, idents = sample), group.by = "TSS.group") + NoLegend()
   print(p)
-  cat('\n\n')
+  cat("\n\n")
 }
 ```
 
@@ -288,11 +292,11 @@ The histogram of DNA fragment sizes (determined from the paired-end sequencing r
 
 ```{r warning = FALSE, results='asis'}
 seurat$nucleosome_group <- ifelse(seurat$nucleosome_signal > 1, "high NS", "low NS")
-for (sample in levels(seurat$sample)){
-  cat('####', sample, '\n\n')
-  p <- FragmentHistogram(seurat, group.by = 'nucleosome_group', cells = colnames(seurat[, seurat$sample == sample]))
+for (sample in levels(seurat$sample)) {
+  cat("####", sample, "\n\n")
+  p <- FragmentHistogram(seurat, group.by = "nucleosome_group", cells = colnames(seurat[, seurat$sample == sample]))
   print(p)
-  cat('\n\n')
+  cat("\n\n")
 }
 # FragmentHistogram(seurat, group.by = 'nucleosome_group', cells = colnames(seurat[, seurat$sample == 'Control']))
 ```
@@ -300,10 +304,10 @@ for (sample in levels(seurat$sample)){
 ```{r fig.width=12}
 VlnPlot(
   object = seurat,
-  features = 'nucleosome_signal',
+  features = "nucleosome_signal",
   pt.size = 0
-) +   scale_fill_cb_friendly() +
-NoLegend() + xlab("")
+) + scale_fill_cb_friendly() +
+  NoLegend() + xlab("")
 ```
 
 
@@ -318,12 +322,11 @@ Line is drawn at `r params$max_blacklistratio`.
 ```{r fig.width=12}
 VlnPlot(
   object = seurat,
-  features = 'blacklist_fraction',
+  features = "blacklist_fraction",
   pt.size = 0
-) +   scale_fill_cb_friendly() +
+) + scale_fill_cb_friendly() +
   NoLegend() +
-  geom_hline(yintercept = params$max_blacklistratio) 
-  
+  geom_hline(yintercept = params$max_blacklistratio)
 ```
 
 
@@ -341,17 +344,17 @@ The first LSI component often captures sequencing depth (techni ccal variation) 
 Here we see there is a very strong correlation between the first LSI component and the total number of counts for the cell, so we will perform downstream steps without this component.
 
 ```{r results='asis'}
-DepthCor(seurat, assay = 'MACS2peaks')
-cat('\n\n')
+DepthCor(seurat, assay = "MACS2peaks")
+cat("\n\n")
 ```
 
 ## UMAP plots
 
 ```{r results='asis'}
-DimPlot(object = seurat, group.by = 'sample', reduction = "umapATAC") +
-    scale_color_cb_friendly()
+DimPlot(object = seurat, group.by = "sample", reduction = "umapATAC") +
+  scale_color_cb_friendly()
 
-cat('\n\n')
+cat("\n\n")
 ```
 
 <!-- # {.unlisted .unnumbered} -->
