@@ -10,7 +10,12 @@ library(lme4)
 library(R.utils)
 library(glue)
 library(optparse)
-##### parameter parse #####
+library(qs)
+
+################################################################################
+# parse parameters
+################################################################################
+
 options(stringsAsFactors = F)
 option_list <- list(
   make_option("--seurat_obj", default = "https://github.com/bcbio/bcbioR-test-data/raw/refs/heads/main/singlecell/tiny.rds"),
@@ -27,11 +32,15 @@ system(glue("mkdir -p {outputDir}"))
 
 
 message("[Preparing inputs for MAST modeling]")
-##### Read in provided seurat #####
+
+################################################################################
+# Read in provided seurat object
+################################################################################
+
 if (isUrl(seurat_obj)) {
   seurat <- readRDS(url(seurat_obj))
 } else {
-  seurat <- readRDS(seurat_obj)
+  seurat <- qread(seurat_obj)
 }
 
 message("Input seurat object: ", seurat_obj)
@@ -40,16 +49,22 @@ message("RNA is set as the default assay")
 message("Column name of clustering to use: ", resolution_column)
 Idents(object = seurat) <- resolution_column
 message("Subset original seurat to be only cluster ", cluster_name, " for faster computing!")
+
+################################################################################
+# Prepare MAST inputs
+################################################################################
+
 data_subset <- subset(x = seurat, idents = cluster_name)
-existintLayers <- Layers(data_subset[["RNA"]])
-if (existintLayers != "counts") {
-  print("Not only counts excisted as layers in this object")
-  print("Make sure your default slot is counts and it is raw counts")
-}
-##### Start from raw count for MAST #####
+
+data_subset <- CreateSeuratObject(counts = data_subset[["RNA"]]$counts, 
+                                  project = 'subset',
+                                  meta.data = data_subset@meta.data)
+
+
 message("Natural log of raw counts with pseudobulk 1 used for MAST modeling")
 sce <- as.SingleCellExperiment(data_subset)
-##### Log-Normalize Seurat for visualization later #####
+
+# ##### Log-Normalize Seurat for visualization later #####
 message("Total counts normalization and log1p transformation done to raw counts")
 message("New layer Data added to the seurat object for visualization later!")
 data_subset <- NormalizeData(
@@ -59,10 +74,12 @@ data_subset <- NormalizeData(
   scale.factor = 10000,
   margin = 1
 )
-saveRDS(data_subset, glue("{outputDir}/processed_seurat.rds"))
-##### Continue MAST input prep #####
+qsave(data_subset, glue("{outputDir}/processed_seurat.qs"))
+
+# log-normalize SCE
 assay(sce, "log") <- log(counts(sce) + 1)
-# Scaling ngenes
+
+# scaling ngenes
 cdr <- colSums(assay(sce, "log") > 0)
 colData(sce)$cngeneson <- scale(cdr)
 
@@ -86,63 +103,68 @@ SummarizedExperiment::colData(sca_filtered)$orig.ident <-
 SummarizedExperiment::colData(sca_filtered)[[column]] <-
   factor(SummarizedExperiment::colData(sca_filtered)[[column]])
 
-##### MAST modeling #####
+################################################################################
+# MAST modeling 
+################################################################################
+
 message("[MAST modeling with supplied contrasts]")
 
 message("Note: this step is time-consuming!")
 
-comp_name <- levels(SummarizedExperiment::colData(sca_filtered)[[column]])[2]
-lrt_name <- paste0(column, comp_name)
-formula_touse <- as.formula(paste0("~ ngeneson + (1 | orig.ident) + ", column))
+# define model coefficients to examine
+SummarizedExperiment::colData(sca_filtered)[[contrast]] <- factor(SummarizedExperiment::colData(sca_filtered)[[contrast]])
+comp_name <- levels(SummarizedExperiment::colData(sca_filtered)[[contrast]])[2]
+lrt_names <- paste0(contrast, comp_name)
 
+# fit model
+formula_touse <- as.formula(paste0("~ ngeneson + (1 | orig.ident) + ", contrast))
 zlmCond <- suppressMessages(MAST::zlm(formula_touse, sca_filtered,
   method = "glmer",
   ebayes = F, strictConvergence = FALSE
 ))
+
+# examine coefficients
 summaryCond_column <- suppressMessages(MAST::summary(zlmCond, doLRT = lrt_name))
 
-##### MAST outputs #####
 message("[Main MAST computation done, result outputs]")
 
-summary_cond_file <- paste0(outputDir, "/MAST_RESULTS_", cluster_name, "_", column, ".rds")
+summary_cond_file <- paste0(outputDir, "/MAST_RESULTS_", cluster_name, "_", contrast, ".rds")
 saveRDS(summaryCond_column, file = summary_cond_file)
 
 message("Full MAST object saved to file ", summary_cond_file)
 
+################################################################################
+# collect MAST outputs 
+################################################################################
 
 summaryDt_column <- summaryCond_column$datatable
-fcHurdle_column <- merge(
-  summaryDt_column[
-    contrast == lrt_name & component == "H",
-    .(primerid, `Pr(>Chisq)`)
-  ],
-  # This extracts hurdle p-values
-  summaryDt_column[
-    contrast == lrt_name & component == "logFC",
-    .(primerid, coef, ci.hi, ci.lo)
-  ],
-  # This extract LogFC data
-  by = "primerid"
-)
+
+fcHurdle_column <- summaryDt_column %>% 
+  filter(component %in% c('H', 'logFC'), contrast %in% lrt_names) %>%
+  dplyr::select(-component) %>% 
+  pivot_longer(!primerid & !contrast, names_to = 'metric', values_to = 'value') %>%
+  filter(!is.na(value), metric != 'z') %>% 
+  pivot_wider(names_from = 'metric', values_from = 'value') %>%
+  mutate(cluster_name = cluster_name) %>%
+  relocate(cluster_name)
+
 fcHurdle_column <- stats::na.omit(as.data.frame(fcHurdle_column))
-fcHurdle_column$fdr <- p.adjust(fcHurdle_column$`Pr(>Chisq)`, "fdr")
-to_save_column <- fcHurdle_column
 
-full_res_file <- paste0(outputDir, "/FULL_MAST_RESULTS_", cluster_name, "_", column, ".csv")
-write.table(to_save_column, file = full_res_file, row.names = FALSE, sep = ",")
+fcHurdle_column <- lapply(lrt_names, function(curr_contrast){
+  fcHurdle_column %>% filter(contrast == curr_contrast) %>% 
+    mutate(fdr = p.adjust(`Pr(>Chisq)`, "fdr"))
+}) %>% bind_rows()
 
+
+full_res_file <- paste0(outputDir, "/FULL_MAST_RESULTS_", cluster_name, "_", contrast, ".csv")
+write.table(fcHurdle_column, file = full_res_file, row.names = FALSE, sep = ",")
 
 message("MAST summary results output to csv files")
 
 
-fcHurdleSig_column <- merge(fcHurdle_column[fcHurdle_column$fdr < .05, ],
-  as.data.table(mcols(sca_filtered)),
-  by = "primerid"
-)
+fcHurdleSig_column <- fcHurdle_column %>% filter(fdr < 0.05) %>% arrange(fdr)
 
-setorder(fcHurdleSig_column, fdr)
-
-sig_res_file <- paste0(outputDir, "/SIG_MAST_RESULTS_padj<0.05_", cluster_name, "_", column, ".csv")
+sig_res_file <- paste0(outputDir, "/SIG_MAST_RESULTS_padj_less_0.05_", cluster_name, "_", contrast, ".csv")
 write.table(fcHurdleSig_column, file = sig_res_file, row.names = FALSE, sep = ",")
 
 message("Significant MAST summary results output to csv files")

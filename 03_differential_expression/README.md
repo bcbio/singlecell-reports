@@ -21,7 +21,7 @@ The template aggregates single cell counts to the sample x cluster x factor_of_i
 -   An adapted `seurat` Dotplot to show % of cells expressing top DEGs;
 -   An integrated Violin-Box-Scatter (VBS) plot displaying the normalized expression of top DEGs per single cell across contrast groups.
 
-We separately prepare the Rscript `02_differential_expression/MAST_analysis.R` to pre-compute the DEG results since MAST computation is relatively time-consuming. For our demo dataset, \~1000 cells and two group comparison, it took around 10-15 minutes.
+We separately prepare the Rscript `02_differential_expression/MAST_analysis.R` to pre-compute the DEG results since MAST computation is relatively time-consuming. For our demo dataset, \~1000 cells and two group comparison, it took around 10-15 minutes. If working on an HPC, you may be interested in running this as a batch job. A sample sbatch script is provided in `run_MAST_analysis.sh`. 
 
 To run this Rscript, you should input below parameters:
 
@@ -39,7 +39,7 @@ To obtain more informative console logs from MAST analysis, please consider runn
 
 You will expect to have three main outputs in your specified output folder:
 
--   `processed_seurat.rds`: the processed seurat object containing log-normalized data
+-   `processed_seurat.qs`: the processed seurat object containing log-normalized data
 -   `MAST_RESULTS*`: the MAST modeling object to allow for further follow-up analysis of your own choice
 -   `FULL_MAST_RESULTS_*`: full MAST differential expression analysis results in csv format
 -   `SIG_MAST_RESULTS_padj<0.05*`: significant DEGs using 0.05 as the threshold for FDR
