@@ -56,9 +56,11 @@ message("Subset original seurat to be only cluster ", cluster_name, " for faster
 
 data_subset <- subset(x = seurat, idents = cluster_name)
 
-data_subset <- CreateSeuratObject(counts = data_subset[["RNA"]]$counts, 
-                                  project = 'subset',
-                                  meta.data = data_subset@meta.data)
+data_subset <- CreateSeuratObject(
+  counts = data_subset[["RNA"]]$counts,
+  project = "subset",
+  meta.data = data_subset@meta.data
+)
 
 
 message("Natural log of raw counts with pseudobulk 1 used for MAST modeling")
@@ -104,7 +106,7 @@ SummarizedExperiment::colData(sca_filtered)[[column]] <-
   factor(SummarizedExperiment::colData(sca_filtered)[[column]])
 
 ################################################################################
-# MAST modeling 
+# MAST modeling
 ################################################################################
 
 message("[MAST modeling with supplied contrasts]")
@@ -134,24 +136,25 @@ saveRDS(summaryCond_column, file = summary_cond_file)
 message("Full MAST object saved to file ", summary_cond_file)
 
 ################################################################################
-# collect MAST outputs 
+# collect MAST outputs
 ################################################################################
 
 summaryDt_column <- summaryCond_column$datatable
 
-fcHurdle_column <- summaryDt_column %>% 
-  filter(component %in% c('H', 'logFC'), contrast %in% lrt_names) %>%
-  dplyr::select(-component) %>% 
-  pivot_longer(!primerid & !contrast, names_to = 'metric', values_to = 'value') %>%
-  filter(!is.na(value), metric != 'z') %>% 
-  pivot_wider(names_from = 'metric', values_from = 'value') %>%
+fcHurdle_column <- summaryDt_column %>%
+  filter(component %in% c("H", "logFC"), contrast %in% lrt_names) %>%
+  dplyr::select(-component) %>%
+  pivot_longer(!primerid & !contrast, names_to = "metric", values_to = "value") %>%
+  filter(!is.na(value), metric != "z") %>%
+  pivot_wider(names_from = "metric", values_from = "value") %>%
   mutate(cluster_name = cluster_name) %>%
   relocate(cluster_name)
 
 fcHurdle_column <- stats::na.omit(as.data.frame(fcHurdle_column))
 
-fcHurdle_column <- lapply(lrt_names, function(curr_contrast){
-  fcHurdle_column %>% filter(contrast == curr_contrast) %>% 
+fcHurdle_column <- lapply(lrt_names, function(curr_contrast) {
+  fcHurdle_column %>%
+    filter(contrast == curr_contrast) %>%
     mutate(fdr = p.adjust(`Pr(>Chisq)`, "fdr"))
 }) %>% bind_rows()
 
@@ -162,7 +165,9 @@ write.table(fcHurdle_column, file = full_res_file, row.names = FALSE, sep = ",")
 message("MAST summary results output to csv files")
 
 
-fcHurdleSig_column <- fcHurdle_column %>% filter(fdr < 0.05) %>% arrange(fdr)
+fcHurdleSig_column <- fcHurdle_column %>%
+  filter(fdr < 0.05) %>%
+  arrange(fdr)
 
 sig_res_file <- paste0(outputDir, "/SIG_MAST_RESULTS_padj_less_0.05_", cluster_name, "_", contrast, ".csv")
 write.table(fcHurdleSig_column, file = sig_res_file, row.names = FALSE, sep = ",")
