@@ -55,9 +55,11 @@ source(project_file)
 ```
 
 ```{r sanitize-datatable}
-sanitize_datatable = function(df, ...) {
- DT::datatable(df, ..., rownames=gsub("-", "_", rownames(df)),
-                   colnames=gsub("-", "_", colnames(df)))
+sanitize_datatable <- function(df, ...) {
+  DT::datatable(df, ...,
+    rownames = gsub("-", "_", rownames(df)),
+    colnames = gsub("-", "_", colnames(df))
+  )
 }
 ```
 
@@ -89,7 +91,7 @@ library(tidyverse)
 library(ggplot2)
 library(R.utils)
 
-if (isUrl(params_file)){
+if (isUrl(params_file)) {
   source(url(params_file))
 } else {
   source(params_file)
@@ -99,7 +101,7 @@ if (isUrl(params_file)){
 
 
 ```{r load}
-if(isUrl(seurat_obj)){
+if (isUrl(seurat_obj)) {
   seurat_raw <- readRDS(url(seurat_obj))
 } else {
   seurat_raw <- readRDS(seurat_obj)
@@ -152,14 +154,14 @@ seurat_qc <- subset(
 #| warning: false
 #| results: asis
 
-seurat_qc <- subset(x = seurat_raw,
-                    subset = (nCount_RNA >= nCount_RNA_cutoff)
-                    & (nFeature_RNA >= nFeature_RNA_cutoff) 
-                    & (mitoRatio < mitoRatio_cutoff)
-                    & (riboRatio < riboRatio_cutoff)  
-                    & (Log10GenesPerUMI > Log10GenesPerUMI_cutoff)
-                    )
-
+seurat_qc <- subset(
+  x = seurat_raw,
+  subset = (nCount_RNA >= nCount_RNA_cutoff) &
+    (nFeature_RNA >= nFeature_RNA_cutoff) &
+    (mitoRatio < mitoRatio_cutoff) &
+    (riboRatio < riboRatio_cutoff) &
+    (Log10GenesPerUMI > Log10GenesPerUMI_cutoff)
+)
 ```
 
 
@@ -191,8 +193,9 @@ In this section, we review quality control (QC) metrics for the **raw feature ma
 ## Cells per sample
 
 ```{r cells raw}
-
-metadata0 %>% group_by(orig.ident) %>% summarize(n_cells_pre_filt = n()) %>%
+metadata0 %>%
+  group_by(orig.ident) %>%
+  summarize(n_cells_pre_filt = n()) %>%
   sanitize_datatable()
 ```
 
@@ -203,26 +206,28 @@ Here, we look at the distribution of UMIs (unique molecular identifiers, or sequ
 
 ```{r raw_nUMIs}
 #| fig-width: 7
-metadata0 %>% 
-  	ggplot(aes(x = nUMI, color = orig.ident, fill =  orig.ident)) + 
-  	geom_density(alpha = 0.2) + 
-  	theme_classic() + 
-  	ylab("Cell density") + scale_x_log10() +
-  	geom_vline(xintercept = nCount_RNA_cutoff) +
-    facet_wrap(. ~ orig.ident) +
-    ggtitle("UMIs per cell in raw dataset")
+metadata0 %>%
+  ggplot(aes(x = nUMI, color = orig.ident, fill = orig.ident)) +
+  geom_density(alpha = 0.2) +
+  theme_classic() +
+  ylab("Cell density") +
+  scale_x_log10() +
+  geom_vline(xintercept = nCount_RNA_cutoff) +
+  facet_wrap(. ~ orig.ident) +
+  ggtitle("UMIs per cell in raw dataset")
 ```
 
 ```{r}
 #| fig-width: 7
 # Visualize the distribution of nUMIs per cell (boxplot)
-metadata0 %>% 
-  	ggplot(aes(x=orig.ident, y=log10(nUMI), fill=orig.ident)) + 
-  	geom_violin() + geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
-  	theme_classic() +
-    geom_hline(yintercept = log10(nCount_RNA_cutoff)) +
-  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  	theme(plot.title = element_text(hjust = 0.5, face = "bold")) 
+metadata0 %>%
+  ggplot(aes(x = orig.ident, y = log10(nUMI), fill = orig.ident)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
+  theme_classic() +
+  geom_hline(yintercept = log10(nCount_RNA_cutoff)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
 
 ## Genes per cell
@@ -232,26 +237,27 @@ Here, we look at the number of different genes that were detected in each cell. 
 ```{r raw_nGene}
 #| fig-width: 7
 # Visualize the distribution of genes detected per cell (histogram)
-metadata0 %>% 
-  	ggplot(aes(x = nGene, color = orig.ident, fill = orig.ident)) + 
-  	geom_density(alpha = 0.2) + 
-  	theme_classic() +
-  	scale_x_log10() + 
-  	geom_vline(xintercept = c(nFeature_RNA_cutoff)) +
-    facet_wrap(. ~ orig.ident) +
-    ggtitle("Detected genes per cell in raw dataset")
+metadata0 %>%
+  ggplot(aes(x = nGene, color = orig.ident, fill = orig.ident)) +
+  geom_density(alpha = 0.2) +
+  theme_classic() +
+  scale_x_log10() +
+  geom_vline(xintercept = c(nFeature_RNA_cutoff)) +
+  facet_wrap(. ~ orig.ident) +
+  ggtitle("Detected genes per cell in raw dataset")
 ```
 
 ```{r}
 #| fig-width: 7
 # Visualize the distribution of nUMIs per cell (boxplot)
-metadata0 %>% 
-  	ggplot(aes(x=orig.ident, y=log10(nGene), fill=orig.ident)) + 
-  	geom_violin() + geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
-  	theme_classic() +
-    geom_hline(yintercept = c(log10(nFeature_RNA_cutoff))) +
-  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  	theme(plot.title = element_text(hjust = 0.5, face = "bold")) 
+metadata0 %>%
+  ggplot(aes(x = orig.ident, y = log10(nGene), fill = orig.ident)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
+  theme_classic() +
+  geom_hline(yintercept = c(log10(nFeature_RNA_cutoff))) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
 
 ## Mitochondrial ratio
@@ -262,26 +268,27 @@ We evaluate overall mitochondrial gene expression as a biomarker of cellular str
 #| fig-width: 7
 #| warning: false
 # Visualize the distribution of mitochondrial gene expression detected per cell
-metadata0 %>% 
-  	ggplot(aes(color = orig.ident, x = mitoRatio, fill = orig.ident)) + 
-  	geom_density(alpha = 0.2) + 
-  	scale_x_log10() + 
-  	theme_classic() +
-  	geom_vline(xintercept = mitoRatio_cutoff) + 
-    facet_wrap(. ~ orig.ident) +
-    ggtitle("Percentage of mitochondrial gene expression per cell in raw dataset")
+metadata0 %>%
+  ggplot(aes(color = orig.ident, x = mitoRatio, fill = orig.ident)) +
+  geom_density(alpha = 0.2) +
+  scale_x_log10() +
+  theme_classic() +
+  geom_vline(xintercept = mitoRatio_cutoff) +
+  facet_wrap(. ~ orig.ident) +
+  ggtitle("Percentage of mitochondrial gene expression per cell in raw dataset")
 ```
 
 ```{r}
 #| fig-width: 7
 # Visualize the distribution of mitochondrial gene expression per cell (violin plot)
-metadata0 %>% 
-  	ggplot(aes(x=orig.ident, y=mitoRatio, fill=orig.ident)) + 
-  	geom_violin() + geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
-  	theme_classic() +
-    geom_hline(yintercept = c(mitoRatio_cutoff)) +
-  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  	theme(plot.title = element_text(hjust = 0.5, face = "bold")) 
+metadata0 %>%
+  ggplot(aes(x = orig.ident, y = mitoRatio, fill = orig.ident)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
+  theme_classic() +
+  geom_hline(yintercept = c(mitoRatio_cutoff)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
 
 ```{r raw_ribo}
@@ -291,16 +298,15 @@ metadata0 %>%
 
 cat("## Ribosomal ratio \n")
 
-cat("We evaluate overall ribosomal gene expression. Different cells types are expected to have different levels of ribosomal expression. Due to this, there is no suggested cutoff for ribosomal ratio. We merely expect it to be similar among samples with similar cellular composition. Note that extremely high levels can indicate low quality reads. \n"
-)
+cat("We evaluate overall ribosomal gene expression. Different cells types are expected to have different levels of ribosomal expression. Due to this, there is no suggested cutoff for ribosomal ratio. We merely expect it to be similar among samples with similar cellular composition. Note that extremely high levels can indicate low quality reads. \n")
 # Visualize the distribution of mitochondrial gene expression detected per cell
-metadata0 %>% 
-  	ggplot(aes(color = orig.ident, x = riboRatio, fill = orig.ident)) + 
-  	geom_density(alpha = 0.2) + 
-  	scale_x_log10() + 
-  	theme_classic() +
-    facet_wrap(. ~ orig.ident) +
-    ggtitle("Percentage of ribosomal gene expression per cell in raw dataset")
+metadata0 %>%
+  ggplot(aes(color = orig.ident, x = riboRatio, fill = orig.ident)) +
+  geom_density(alpha = 0.2) +
+  scale_x_log10() +
+  theme_classic() +
+  facet_wrap(. ~ orig.ident) +
+  ggtitle("Percentage of ribosomal gene expression per cell in raw dataset")
 ```
 
 ## UMIs vs. Genes
@@ -312,17 +318,17 @@ By plotting the number of UMIs per cell (x-axis) vs. the number of genes per cel
 #| fig-width: 8
 #| warning: false
 # Visualize the correlation between genes detected and number of UMIs and determine whether strong presence of cells with low numbers of genes/UMIs
-metadata0 %>% 
-  	ggplot(aes(x=nUMI, y=nGene, color=mitoRatio)) + 
-  	geom_point() + 
-  	stat_smooth(method=lm) +
-  	scale_x_log10() + 
-  	scale_y_log10() + 
-  	theme_classic() +
-  	geom_vline(xintercept = nCount_RNA_cutoff) +
-  	geom_hline(yintercept = nFeature_RNA_cutoff) + 
-    ggtitle("Genes vs. nUMIs in raw dataset") + 
-  	facet_wrap(~orig.ident)
+metadata0 %>%
+  ggplot(aes(x = nUMI, y = nGene, color = mitoRatio)) +
+  geom_point() +
+  stat_smooth(method = lm) +
+  scale_x_log10() +
+  scale_y_log10() +
+  theme_classic() +
+  geom_vline(xintercept = nCount_RNA_cutoff) +
+  geom_hline(yintercept = nFeature_RNA_cutoff) +
+  ggtitle("Genes vs. nUMIs in raw dataset") +
+  facet_wrap(~orig.ident)
 ```
 
 ## Complexity
@@ -330,27 +336,27 @@ metadata0 %>%
 Another way to assess the quality and purity of a single-cell dataset is to look for cells that have fewer detected genes per UMI than others. Typical values for this metric are >0.8 for most cells. Cells with lower diversity in the genes they express may be low-complexity cell types such as red blood cells. With sorted populations, we expect high purity and a very similar complexity distribution across samples. The line is at `r Log10GenesPerUMI_cutoff`. 
 
 ```{r raw_novelty}
-
 # Visualize the overall novelty of the gene expression by visualizing the genes detected per UMI
 metadata0 %>%
-  	ggplot(aes(x = Log10GenesPerUMI, color = orig.ident, fill = orig.ident)) +
-  	geom_density(alpha = 0.2) +
-  	theme_classic() +
-    geom_vline(xintercept = Log10GenesPerUMI_cutoff) +
-    facet_wrap(. ~ orig.ident) +
-    ggtitle("log10(Genes per UMI) in raw dataset")
+  ggplot(aes(x = Log10GenesPerUMI, color = orig.ident, fill = orig.ident)) +
+  geom_density(alpha = 0.2) +
+  theme_classic() +
+  geom_vline(xintercept = Log10GenesPerUMI_cutoff) +
+  facet_wrap(. ~ orig.ident) +
+  ggtitle("log10(Genes per UMI) in raw dataset")
 ```
 
 
 ```{r}
 # Visualize the overall novelty of the gene expression by visualizing the genes detected per UMI (boxplot)
-metadata0 %>% 
-  	ggplot(aes(x=orig.ident, Log10GenesPerUMI, fill=orig.ident)) + 
-  	geom_violin() + geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
-  	theme_classic() +
-    geom_hline(yintercept = Log10GenesPerUMI_cutoff) +
-  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  	theme(plot.title = element_text(hjust = 0.5, face = "bold")) 
+metadata0 %>%
+  ggplot(aes(x = orig.ident, Log10GenesPerUMI, fill = orig.ident)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
+  theme_classic() +
+  geom_hline(yintercept = Log10GenesPerUMI_cutoff) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
 
 
@@ -363,8 +369,9 @@ In this section, we review QC metrics for our filtered dataset.
 ## Cells per sample
 
 ```{r cells filtered}
-
-metadata0 %>% group_by(orig.ident) %>% summarize(n_cells_pre_filt = n()) %>%
+metadata0 %>%
+  group_by(orig.ident) %>%
+  summarize(n_cells_pre_filt = n()) %>%
   left_join(metadata1 %>% group_by(orig.ident) %>% summarize(n_cells_post_filt = n())) %>%
   mutate(pct_remaining = round(n_cells_post_filt / n_cells_pre_filt * 100, 3)) %>%
   sanitize_datatable()
@@ -374,48 +381,51 @@ metadata0 %>% group_by(orig.ident) %>% summarize(n_cells_pre_filt = n()) %>%
 ## UMIs per cell
 
 ```{r qc1_nUMIs}
-
-metadata1 %>% 
-  	ggplot(aes(color = orig.ident, x = nUMI, fill = orig.ident)) + 
-  	geom_density(alpha = 0.2) + 
-  	scale_x_log10() + 
-  	theme_classic() +
-  	ylab("Cell density") + xlab("nUMI") +
-    facet_wrap(. ~ orig.ident)+
-    ggtitle("UMIs per cell in filtered dataset")
+metadata1 %>%
+  ggplot(aes(color = orig.ident, x = nUMI, fill = orig.ident)) +
+  geom_density(alpha = 0.2) +
+  scale_x_log10() +
+  theme_classic() +
+  ylab("Cell density") +
+  xlab("nUMI") +
+  facet_wrap(. ~ orig.ident) +
+  ggtitle("UMIs per cell in filtered dataset")
 ```
 
 ```{r}
 # Visualize the distribution of nUMIs per cell (boxplot)
-metadata1 %>% 
-  	ggplot(aes(x=orig.ident, y=log10(nUMI), fill=orig.ident)) + 
-  	geom_violin() + geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
-  	theme_classic() +
-  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  	theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+metadata1 %>%
+  ggplot(aes(x = orig.ident, y = log10(nUMI), fill = orig.ident)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
 
 ## Genes per cell
 
 ```{r qc1_genes}
 # Visualize the distribution of genes detected per cell via histogram
-metadata1 %>% 
-  	ggplot(aes(color = orig.ident, x = nGene, fill= orig.ident)) + 
-  	geom_density(alpha = 0.2) + 
-  	theme_classic() +
-  	scale_x_log10() + xlab("nGene") +
-    facet_wrap(. ~ orig.ident) +
-    ggtitle("Detected genes per cell in filtered dataset")
+metadata1 %>%
+  ggplot(aes(color = orig.ident, x = nGene, fill = orig.ident)) +
+  geom_density(alpha = 0.2) +
+  theme_classic() +
+  scale_x_log10() +
+  xlab("nGene") +
+  facet_wrap(. ~ orig.ident) +
+  ggtitle("Detected genes per cell in filtered dataset")
 ```
 
 ```{r}
 # Visualize the distribution of genes detected per cell (boxplot)
-metadata1 %>% 
-  	ggplot(aes(x=orig.ident, y=log10(nGene), fill=orig.ident)) + 
-  	geom_violin() + geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
-  	theme_classic() +
-  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  	theme(plot.title = element_text(hjust = 0.5, face = "bold")) 
+metadata1 %>%
+  ggplot(aes(x = orig.ident, y = log10(nGene), fill = orig.ident)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
 
 ## Mitochondrial ratio
@@ -429,20 +439,21 @@ metadata1 %>%
   geom_density(alpha = 0.2) +
   scale_x_log10() +
   theme_classic() +
-  geom_vline(xintercept = 0.1) 
+  geom_vline(xintercept = 0.1)
 # +
 #   facet_wrap(. ~ surgery)
 ```
 
 ```{r}
 # Visualize the distribution of mitochondrial gene expression per cell (violin plot)
-metadata1 %>% 
-  	ggplot(aes(x=orig.ident, y=mitoRatio, fill=orig.ident)) + 
-  	geom_violin() + geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
-  	theme_classic() +
-    geom_hline(yintercept = c(mitoRatio_cutoff)) +
-  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  	theme(plot.title = element_text(hjust = 0.5, face = "bold")) 
+metadata1 %>%
+  ggplot(aes(x = orig.ident, y = mitoRatio, fill = orig.ident)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
+  theme_classic() +
+  geom_hline(yintercept = c(mitoRatio_cutoff)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
 
 ```{r qc1_ribo}
@@ -453,23 +464,24 @@ metadata1 %>%
 cat("## Ribosomal ratio \n")
 
 # Visualize the distribution of ribosomal gene expression detected per cell
-metadata1 %>% 
-  	ggplot(aes(color = orig.ident, x = riboRatio, fill = orig.ident)) + 
-  	geom_density(alpha = 0.2) + 
-  	scale_x_log10() + 
-  	theme_classic() +
-    facet_wrap(. ~ orig.ident) +
-    ggtitle("Percentage of ribosomal gene expression per cell in filtered dataset")
+metadata1 %>%
+  ggplot(aes(color = orig.ident, x = riboRatio, fill = orig.ident)) +
+  geom_density(alpha = 0.2) +
+  scale_x_log10() +
+  theme_classic() +
+  facet_wrap(. ~ orig.ident) +
+  ggtitle("Percentage of ribosomal gene expression per cell in filtered dataset")
 ```
 
 ```{r}
 #| eval: !expr ribosomal
-metadata1 %>% 
-  	ggplot(aes(x=orig.ident, y = riboRatio, fill = orig.ident)) + 
-  	geom_violin() + geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
-  	theme_classic() +
-  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  	theme(plot.title = element_text(hjust = 0.5, face = "bold")) 
+metadata1 %>%
+  ggplot(aes(x = orig.ident, y = riboRatio, fill = orig.ident)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
 
 ## UMIs vs. Genes
@@ -479,17 +491,17 @@ metadata1 %>%
 #| fig-width: 8
 #| warning: false
 
-metadata1 %>% 
-  	ggplot(aes(x = nUMI, y = nGene, color = mitoRatio)) + 
-  	geom_point() + 
-  	stat_smooth(method=lm) +
-  	scale_x_log10() + 
-  	scale_y_log10() + 
-  	theme_classic() +
-    ggtitle("Genes vs. nUMIs in filtered dataset") + 
-    xlab("nUMI") + 
-    ylab("nGene") + 
-  	facet_wrap(~orig.ident)
+metadata1 %>%
+  ggplot(aes(x = nUMI, y = nGene, color = mitoRatio)) +
+  geom_point() +
+  stat_smooth(method = lm) +
+  scale_x_log10() +
+  scale_y_log10() +
+  theme_classic() +
+  ggtitle("Genes vs. nUMIs in filtered dataset") +
+  xlab("nUMI") +
+  ylab("nGene") +
+  facet_wrap(~orig.ident)
 ```
 
 ## Complexity
@@ -498,22 +510,23 @@ metadata1 %>%
 #| fig-width: 7
 # Visualize the overall novelty of the gene expression by visualizing the genes detected per UMI
 metadata1 %>%
-  	ggplot(aes(x = Log10GenesPerUMI, color = orig.ident, fill = orig.ident)) +
-  	geom_density(alpha = 0.2) +
-  	theme_classic() +
-    facet_wrap(. ~ orig.ident) +
-    ggtitle("log10(Genes per UMI) in filtered dataset")
+  ggplot(aes(x = Log10GenesPerUMI, color = orig.ident, fill = orig.ident)) +
+  geom_density(alpha = 0.2) +
+  theme_classic() +
+  facet_wrap(. ~ orig.ident) +
+  ggtitle("log10(Genes per UMI) in filtered dataset")
 ```
 
 ```{r}
 #| fig-width: 7
 # Visualize the distribution of nUMIs per cell (boxplot)
-metadata1 %>% 
-  	ggplot(aes(x=orig.ident, Log10GenesPerUMI, fill=orig.ident)) + 
-  	geom_violin() + geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
-  	theme_classic() +
-  	theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  	theme(plot.title = element_text(hjust = 0.5, face = "bold")) 
+metadata1 %>%
+  ggplot(aes(x = orig.ident, Log10GenesPerUMI, fill = orig.ident)) +
+  geom_violin() +
+  geom_boxplot(width = 0.1, fill = alpha("white", 0.7)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
 ```
 
 
