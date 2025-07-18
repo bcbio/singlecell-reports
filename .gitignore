@@ -3,5 +3,5 @@
 .RData
 .Ruserdata
 *.Rproj
-*.html
-
+**/*.html
+**html
