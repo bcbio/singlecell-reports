@@ -126,7 +126,7 @@ zlmCond <- suppressMessages(MAST::zlm(formula_touse, sca_filtered,
 ))
 
 # examine coefficients
-summaryCond_column <- suppressMessages(MAST::summary(zlmCond, doLRT = lrt_name))
+summaryCond_column <- suppressMessages(MAST::summary(zlmCond, doLRT = lrt_names))
 
 message("[Main MAST computation done, result outputs]")
 
