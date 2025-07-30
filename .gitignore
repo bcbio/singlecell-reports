@@ -1,8 +1,17 @@
 .Rproj.user
-.Rhistory
 .RData
 .Ruserdata
 *.Rproj
-**/*.html
-**html
-!01_quality_assessment/scRNA_QC.html
+
+# Ignore R package environment
+renv/
+**/renv/
+# Ignore R session files
+.Rhistory
+**/.Rhistory
+
+**/*.rds
+**/*_files
+**/*_cache
+**/.Rprofile
+**/.Rmd
