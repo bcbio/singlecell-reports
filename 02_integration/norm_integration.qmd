@@ -2,18 +2,31 @@
 title: "scRNA normalization and clustering"
 author: "Harvard Chan Bioinformatics Core"
 date: "`r Sys.Date()`"
-output:
-   html_document:
-      code_folding: hide
-      df_print: paged
-      highlights: pygments
-      number_sections: true
-      self_contained: true
-      theme: default
-      toc: true
-      toc_float:
-         collapsed: true
-         smooth_scroll: true
+html:
+    number-sections: false
+    default-image-extension: svg
+    lightbox: true
+    callout-icon: false
+    format-links: true
+    toc: true
+    theme: sandstone
+    echo: true
+    eval: true
+    message: false
+    warning: false
+    code-copy: true
+    code-overflow: wrap
+    code-fold: true
+    code-line-numbers: true
+    embed-resources: true
+    standalone: true
+    html-math-method: katex
+    grid:
+      sidebar-width: 250px
+      body-width: 900px
+      margin-width: 300px
+    comments:
+      hypothesis: true
 params:
    project_file: ../information.R
 knitr:
