@@ -403,12 +403,12 @@ for (contrast in names(de_list)) {
 ```{r sig_genes_table}
 #| results: 'asis'
 for (contrast in names(de_list)) {
-  cat('## ', contrast, ' \n\n')
+  cat("## ", contrast, " \n\n")
   res_sig <- de_list[[contrast]][["sig"]]
   t <- res_sig %>%
     sanitize_datatable()
   print(htmltools::tagList(t))
-  cat(' \n\n')
+  cat(" \n\n")
 }
 ```
 :::
