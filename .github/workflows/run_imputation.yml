@@ -1,0 +1,123 @@
+name: Imputation Correlation Workflow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '06_imputation/correlation_workflow.qmd'
+  pull_request:
+    branches: [main]
+    paths:
+      - '06_imputation/correlation_workflow.qmd'
+  workflow_dispatch:
+
+jobs:
+  r-imputation:
+    runs-on: ubuntu-22.04
+
+    env:
+      RENV_PATHS_ROOT: ~/.local/share/renv  # persistent cache location
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install system dependencies for R packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libcurl4-openssl-dev libssl-dev libxml2-dev libgit2-dev libmagick++-dev libharfbuzz-dev libfribidi-dev libglpk-dev
+        shell: bash
+
+      - name: Set up Python with conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: 3.9
+          auto-update-conda: true
+
+      - name: Create and activate conda environment
+        run: |
+          conda env remove -n magic_env -y 2>/dev/null || true
+          conda create -n magic_env python=3.9 -y
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate magic_env
+          
+          # Install compatible packages from conda-forge
+          conda install -y -c conda-forge numpy=1.24.3 pandas=2.0.3 scipy matplotlib
+          
+          # Install MAGIC dependencies
+          pip install scprep future tasklogger graphtools
+          
+          # Clone MAGIC repository
+          cd 06_imputation
+          git clone git://github.com/KrishnaswamyLab/MAGIC.git
+          
+          # Install MAGIC package
+          cd MAGIC/python
+          pip install .
+          cd ../..
+          
+          # Test MAGIC installation
+          python -c "import magic; print('MAGIC version:', magic.__version__)"
+        shell: bash
+
+      - name: Cache R packages (renv)
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.RENV_PATHS_ROOT }}
+          key: ${{ runner.os }}-renv-${{ hashFiles('06_imputation/renv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-renv-
+
+      - name: Set repositories
+        run: Rscript ubuntu.R
+
+      - name: Restore environment from renv.lock
+        run: |
+          install.packages("renv", repos = "https://cloud.r-project.org")
+          renv::restore(prompt = FALSE, lockfile = "06_imputation/renv.lock")
+        shell: Rscript {0}
+
+      - name: Install R MAGIC package
+        run: |
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate magic_env
+          R --slave << 'EOF'
+          if (file.exists("06_imputation/renv/activate.R")) {
+            source("06_imputation/renv/activate.R")
+          }
+          install.packages("./06_imputation/MAGIC/Rmagic", repos = NULL, type = "source")
+          library(Rmagic)
+          cat("✓ R MAGIC installed and loaded\n")
+          renv::snapshot()
+          EOF
+        shell: bash
+     
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+     
+      - name: Run imputation correlation workflow
+        id: render_qmd
+        run: |
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate magic_env
+          cd 06_imputation
+          quarto render correlation_workflow.qmd
+        shell: bash
+
+      - name: Deploy HTML to gh-pages
+        if: success()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages || git checkout --orphan gh-pages
+          git switch gh-pages || git checkout -b gh-pages
+          git add 06_imputation/correlation_workflow.html
+          git commit -m "Deploy correlation_workflow.html [skip ci]" || echo "No changes to commit"
+          git push origin gh-pages
+        shell: bash 
