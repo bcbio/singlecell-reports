@@ -50,7 +50,18 @@ jobs:
           install.packages("renv", repos = "https://cloud.r-project.org")
           renv::restore(prompt = FALSE, lockfile = "03_differential_expression/renv.lock")
         shell: Rscript {0}
-     
+
+      - name: Run MAST analysis for cluster 2
+        run: |
+          cd 03_differential_expression
+          Rscript MAST_analysis.R \
+            --seurat_obj=https://github.com/bcbio/bcbioR-test-data/raw/refs/heads/main/singlecell/tiny.rds \
+            --resolution_column=integrated_snn_res.0.4 \
+            --cluster_name=2 \
+            --contrast=age \
+            --outputDir=out
+        shell: bash
+ 
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
      
