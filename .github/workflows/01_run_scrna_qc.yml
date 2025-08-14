@@ -68,26 +68,18 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           OUTPUT_FILE="01_quality_assessment/scRNA_QC.html"
 
-          # Create a temporary worktree for gh-pages branch
+          # Fetch gh-pages (if exists) and create worktree
           git fetch origin gh-pages || true
-          git worktree add /tmp/gh-pages gh-pages || git worktree add /tmp/gh-pages -b gh-pages
+          git worktree add /tmp/gh-pages gh-pages 2>/dev/null || git worktree add /tmp/gh-pages -b gh-pages
 
-          # Copy the file to the worktree
-          mkdir -p /tmp/gh-pages/01_quality_assessment
-          cp "$OUTPUT_FILE" /tmp/gh-pages/01_quality_assessment/
+          # Copy the file into the worktree
+          mkdir -p "/tmp/gh-pages/$(dirname "$OUTPUT_FILE")"
+          cp "$OUTPUT_FILE" "/tmp/gh-pages/$(dirname "$OUTPUT_FILE")/"
 
           cd /tmp/gh-pages
 
           # Commit and push if there are changes
-          if git diff --quiet && git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git add 01_quality_assessment/scRNA_QC.html
-            git commit -m "Deploy scRNA_QC.html [skip ci]"
-            git push origin gh-pages
-          fi
-
-          # Clean up
-          cd -
-          git worktree remove /tmp/gh-pages
+          git add "$(dirname "$OUTPUT_FILE")/$(basename "$OUTPUT_FILE")"
+          git commit -m "Deploy $(basename "$OUTPUT_FILE") [skip ci]"
+          git push --force origin gh-pages
         shell: bash

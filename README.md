@@ -45,8 +45,6 @@ Read full documentation at [03_differential_expression/README.md](03_differentia
 
 - ![](https://img.shields.io/badge/status-stable-green) [MAST scRNA](03_differential_expression/scRNA_MAST.Rmd) is a template to visualize differentially expressed genes (DEG) results generated from MAST analysis. 👀 [See an example](https://bcbio.github.io/singlecell-reports/03_differential_expression/scRNA_MAST.html)
 
-## Compositional Analysis
-
 # Compositional Analysis
 
 ![](https://img.shields.io/badge/status-draft-grey) [`04_compositional/propeller.Rmd`](04_compositional/propeller.Rmd) and [`04_compositional/sscomp.Rmd`](04_compositional/sccomp.Rmd) are templates to run compositional analysis with two different methods. `comp.png` is an example of `sccomp.Rmd` analysis.
