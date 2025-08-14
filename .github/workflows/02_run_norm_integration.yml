@@ -69,22 +69,18 @@ jobs:
 
           OUTPUT_FILE="02_integration/norm_integration.html"
 
-          # Create a temporary worktree for gh-pages branch
+          # Fetch gh-pages (if exists) and create worktree
           git fetch origin gh-pages || true
-          git worktree add /tmp/gh-pages gh-pages || git worktree add /tmp/gh-pages -b gh-pages
+          git worktree add /tmp/gh-pages gh-pages 2>/dev/null || git worktree add /tmp/gh-pages -b gh-pages
 
-          # Copy the file to the worktree
-          mkdir -p /tmp/gh-pages/02_integration
-          cp "$OUTPUT_FILE" /tmp/gh-pages/02_integration/
+          # Copy the file into the worktree
+          mkdir -p "/tmp/gh-pages/$(dirname "$OUTPUT_FILE")"
+          cp "$OUTPUT_FILE" "/tmp/gh-pages/$(dirname "$OUTPUT_FILE")/"
 
           cd /tmp/gh-pages
-          ls -R .
 
-          git add 02_integration/norm_integration.html
-          git commit -m "Deploy norm_integration.html [skip ci]"
+          # Commit and push if there are changes
+          git add "$(dirname "$OUTPUT_FILE")/$(basename "$OUTPUT_FILE")"
+          git commit -m "Deploy $(basename "$OUTPUT_FILE") [skip ci]"
           git push --force origin gh-pages
-
-          # Clean up
-          cd -
-          git worktree remove /tmp/gh-pages
         shell: bash
