@@ -263,7 +263,7 @@ signaturePlot <- function(seurat_object,
 
   g2 <- lapply(g1, function(x) {
     x + fix_params +
-      theme_minimal() + 
+      theme_minimal() +
       theme(
         legend.position = "bottom",
         plot.title = element_text(hjust = 0.5)
@@ -423,7 +423,7 @@ signaturePlot <- function(seurat_object,
 
   g2 <- lapply(g1, function(x) {
     x + fix_params +
-      theme_minimal() + 
+      theme_minimal() +
       theme(
         legend.position = "bottom",
         plot.title = element_text(hjust = 0.5)
