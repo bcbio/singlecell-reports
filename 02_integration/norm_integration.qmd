@@ -2,31 +2,53 @@
 title: "scRNA normalization and clustering"
 author: "Harvard Chan Bioinformatics Core"
 date: "`r Sys.Date()`"
-output:
-   html_document:
-      code_folding: hide
-      df_print: paged
-      highlights: pygments
-      number_sections: true
-      self_contained: true
-      theme: default
-      toc: true
-      toc_float:
-         collapsed: true
-         smooth_scroll: true
+html:
+    number-sections: false
+    default-image-extension: svg
+    lightbox: true
+    callout-icon: false
+    format-links: true
+    toc: true
+    theme: sandstone
+    echo: true
+    eval: true
+    message: false
+    warning: false
+    code-copy: true
+    code-overflow: wrap
+    code-fold: true
+    code-line-numbers: true
+    embed-resources: true
+    standalone: true
+    html-math-method: katex
+    grid:
+      sidebar-width: 250px
+      body-width: 900px
+      margin-width: 300px
+    comments:
+      hypothesis: true
 params:
    project_file: ../information.R
+knitr:
+  opts_chunk:
+    audodep: true
+    cache: false
+    cache.lazy: false
+    error: true
+    echo: true
+    fig-height: 5
+    fig.retina: 2
+    fig-width: 9.6
+    message: false
+    tidy: true
+    warning: true
 ---
 
 Template developed with materials from https://hbctraining.github.io/main/.
 
-```{r, message=FALSE, warning=FALSE}
-# This set up the working directory to this file so all files can be found
-library(rstudioapi)
-library(tidyverse)
-setwd(fs::path_dir(getSourceEditorContext()$path))
-# NOTE: This code will check version, this is our recommendation, it may work
-# .      other versions
+```{r }
+#| message: false
+#| warning: false
 stopifnot(R.version$major >= 4) # requires R4
 if (compareVersion(R.version$minor, "3.1") < 0) warning("We recommend >= R4.3.1")
 stopifnot(compareVersion(as.character(BiocManager::version()), "3.18") >= 0)
@@ -42,12 +64,16 @@ This code is in this ![](https://img.shields.io/badge/status-alpha-yellow) revis
 
 cell_cycle_file <- "https://github.com/bcbio/resources/raw/refs/heads/main/singlecell/human_cell_cycle.csv"
 seurat_obj <- "https://github.com/bcbio/bcbioR-test-data/raw/refs/heads/main/singlecell/tiny.rds"
-seurat_output <- "/tmp/seurat_clust.rds"
-
-source(params$project_file)
+seurat_output <- "./seurat_clust.rds"
+invisible(list2env(params, environment()))
+source(project_file)
 ```
 
-```{r setup, cache=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
+```{r setup}
+#| cache: false
+#| message: false
+#| warning: false
+#| echo: false
 knitr::opts_chunk$set(echo = TRUE)
 # Load libraries
 library(Seurat)
@@ -61,7 +87,7 @@ library(clustree)
 library(ggprism)
 library(grafify)
 library(R.utils)
-# library(future)
+library(readr)
 
 ggplot2::theme_set(theme_prism(base_size = 12))
 # https://grafify-vignettes.netlify.app/colour_palettes.html
@@ -72,19 +98,6 @@ scale_colour_discrete <- function(...) {
 
 # Set seed for reproducibility
 set.seed(1454944673L)
-opts_chunk[["set"]](
-  audodep = TRUE,
-  cache = FALSE,
-  cache.lazy = FALSE,
-  error = TRUE,
-  echo = TRUE,
-  fig.height = 5L,
-  fig.retina = 2L,
-  fig.width = 9.6,
-  message = FALSE,
-  tidy = TRUE,
-  warning = TRUE
-)
 ```
 
 # Overview
@@ -97,15 +110,12 @@ opts_chunk[["set"]](
 
 ## Dataset
 
-The Seurat object used as input for this report was prepared with the thresholds detailed below applied. 
+The Seurat object used as input for this report was prepared with the thresholds detailed below applied.
 
--nGenes > `nFeature_RNA_cutoff`
--nUMI > `nCount_RNA_cutoff`
--complexity > `Log10GenesPerUMI_cutoff`
--percent mitochondrial reads < `mitoRatio_cutoff`
+-nGenes \> `nFeature_RNA_cutoff` -nUMI \> `nCount_RNA_cutoff` -complexity \> `Log10GenesPerUMI_cutoff` -percent mitochondrial reads \< `mitoRatio_cutoff`
 
-
-```{r load_data, cache = TRUE}
+```{r load_data}
+#| cache: true
 # Source cell cycle markers
 cc_markers <- read_csv(cell_cycle_file)
 stopifnot(c("gene_name", "phase") %in% colnames(cc_markers))
@@ -128,30 +138,31 @@ cols3 <- unlist(strsplit(paste(colsD, colsM, colsL, sep = "_"), "_"))
 cols2 <- c(unlist(strsplit(paste(colsD, colsM, sep = "_"), "_")), "deepskyblue2")
 ```
 
-
 After filtering, each sample contributed the following number of cells to the analysis:
 
 ```{r meta pre doub}
 table(seurat_qc$orig.ident)
 ```
 
-
 # Sources of variability Log normalization {.tabset}
 
-In this section, we look at potential confounding variables in our (post-QC) dataset, to determine whether their effect needs to be accounted for before normalizing and integrating the data. 
+In this section, we look at potential confounding variables in our (post-QC) dataset, to determine whether their effect needs to be accounted for before normalizing and integrating the data.
 
 To enable meaningful visualization of the data, we apply a minimal normalization to our raw data (log-normalization). We then identify the top 2000 most variable genes across the log-normalized data, i.e. those with the greatest variability in expression level from one cell to the next. Finally, we calculate principal components (PCs) based on these top 2000 most variable genes, and use the first 50 PCs to derive reduced UMAP (Uniform Manifold Approximation and Projection) components.
 
 **We start with log normalization because it is good to observe the data and any trends using a simple transformation. More complex methods like SCT can alter the data in a way that is not as intuitive to interpret.**
 
-```{r, eval=file.exists("seurat_lognorm.rds")}
+```{r }
+#| eval: !expr file.exists("seurat_lognorm.rds")
 # NOTE run the chunk below to create this object, and loading will be used while
 #     knitting to speed up the rendering
 seurat_lognorm <- readRDS("seurat_lognorm.rds")
 ```
 
-
-```{r rna_norm0, eval=!exists("seurat_lognorm"), warning=FALSE, message=FALSE}
+```{r rna_norm0}
+#| eval: !expr "!exists('seurat_lognorm')"
+#| warning: false
+#| message: false
 # Normalize data
 seurat_lognorm <- NormalizeData(seurat_qc,
   normalization.method = "LogNormalize",
@@ -198,13 +209,15 @@ UMAPPlot(seurat_lognorm, group.by = "orig.ident") + ggtitle("UMAP")
 
 ## Cell cycle
 
-The phase of the cell cycle that cells are in at the time of sample preparation can introduce some variability in the transcriptome that we are not interested in exploring. 
+The phase of the cell cycle that cells are in at the time of sample preparation can introduce some variability in the transcriptome that we are not interested in exploring.
 
-To examine cell cycle variation in our data, we assign a score to each cell, derived from the overall expression level of known markers of the G2/M and S phase in that cell. We then display the cells, color-coded by inferred cell cycle phase, on our UMAP. 
+To examine cell cycle variation in our data, we assign a score to each cell, derived from the overall expression level of known markers of the G2/M and S phase in that cell. We then display the cells, color-coded by inferred cell cycle phase, on our UMAP.
 
 Unless cells very strongly cluster by phase of the cell cycle (which is not the case here), we do not recommend to regress out the effect of the cell cycle.
 
-```{r cell_cycle_scoring, message=FALSE, warning=FALSE}
+```{r cell_cycle_scoring}
+#| message: false
+#| warning: false
 # Step 1 - Get cell cycle markers
 
 # Compute cell cycle score for each cell
@@ -250,7 +263,7 @@ signaturePlot <- function(seurat_object,
 
   g2 <- lapply(g1, function(x) {
     x + fix_params +
-      theme_minimal() + # theme_void()
+      theme_minimal() +
       theme(
         legend.position = "bottom",
         plot.title = element_text(hjust = 0.5)
@@ -306,23 +319,27 @@ g <- signaturePlot(seurat_lognorm,
 g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
 
-# SCT Normalization  {.tabset}
+# SCT Normalization {.tabset}
 
 Now that we have established which effects are observed in our data, we can use the SCTransform method to regress out these effects. The SCTransform method was proposed as a better alternative to the log transform normalization method that we used for exploring sources of unwanted variation. The method not only normalizes data, but it also performs a variance stabilization and allows for additional covariates to be regressed out.
 
 All genes cannot be treated the same, as such, the SCTransform method constructs a generalized linear model (GLM) for each gene with UMI counts as the response and sequencing depth as the explanatory variable. Information is pooled across genes with similar abundances, to regularize parameter estimates and obtain residuals which represent effectively normalized data values which are no longer correlated with sequencing depth.
 
-We searched for the top 3000 genes with the largest variability in expression level from cell to cell after SCT-normalization, and re-calculated our principal and UMAP components based on the SCT-normalized data for these top genes. 
+We searched for the top 3000 genes with the largest variability in expression level from cell to cell after SCT-normalization, and re-calculated our principal and UMAP components based on the SCT-normalized data for these top genes.
 
 **We keep each sample separate for SCT normalization.**
 
-```{r, eval=file.exists("seurat_sctnorm.rds")}
+```{r }
+#| eval: !expr file.exists("seurat_sctnorm.rds")
 # NOTE run the chunk below to create this object, and loading will be used while
 #     knitting to speed up the rendering
 seurat_sctnorm <- readRDS("seurat_sctnorm.rds")
 ```
 
-```{r eval=!exists("seurat_sctnorm"), warning=FALSE, message=FALSE}
+```{r}
+#| eval: !expr "!exists('seurat_sctnorm')"
+#| warning: false
+#| message: false
 # NOTE: this should be ran previous rendering to prepare the object
 ## Note that this single command replaces NormalizeData(), ScaleData(), and FindVariableFeatures()
 
@@ -333,7 +350,6 @@ seurat_lognorm[["RNA"]] <- split(seurat_lognorm[["RNA"]],
 
 seurat_sctnorm <- SCTransform(seurat_lognorm,
   vst.flavor = "v2",
-  # vars.to.regress = c("mitoRatio")
   variable.features.n = 3000
 )
 seurat_sctnorm <- RunPCA(seurat_sctnorm)
@@ -346,22 +362,25 @@ saveRDS(seurat_sctnorm, file = "seurat_sctnorm.rds")
 
 The plots below show the same variables as before, this time **displayed on the UMAP calculated after applying SCT-normalization**.
 
-We qualitatively reviewed the "structure" in our normalized data projection . We were particularly interested in seeing whether similar cell populations across samples clustered together (i.e. overlapped on the UMAP). 
+We qualitatively reviewed the "structure" in our normalized data projection . We were particularly interested in seeing whether similar cell populations across samples clustered together (i.e. overlapped on the UMAP).
 
-```{r, fig.width=10}
+```{r }
+#| fig-width: 10
 DefaultAssay(seurat_sctnorm) <- "SCT"
 UMAPPlot(seurat_sctnorm, group.by = "orig.ident") + ggtitle("UMAP")
 ```
 
 ## Cell cycle
 
-The phase of the cell cycle that cells are in at the time of sample preparation can introduce some variability in the transcriptome that we are not interested in exploring. 
+The phase of the cell cycle that cells are in at the time of sample preparation can introduce some variability in the transcriptome that we are not interested in exploring.
 
-To examine cell cycle variation in our data, we assign a score to each cell, derived from the overall expression level of known markers of the G2/M and S phase in that cell. We then display the cells, color-coded by inferred cell cycle phase, on our UMAP. 
+To examine cell cycle variation in our data, we assign a score to each cell, derived from the overall expression level of known markers of the G2/M and S phase in that cell. We then display the cells, color-coded by inferred cell cycle phase, on our UMAP.
 
 Unless cells very strongly cluster by phase of the cell cycle (which is not the case here), we do not recommend to regress out the effect of the cell cycle.
 
-```{r cell_cycle_scoring2, message=FALSE, warning=FALSE}
+```{r cell_cycle_scoring2}
+#| message: false
+#| warning: false
 # Step 1 - Get cell cycle markers
 ## Cell cycle markers for c.elegans, human, mouse, D. rerio, and D. melanogaster can be found here: https://github.com/hbc/tinyatlas/tree/1e2136a35e773f14d97ae9cbdb6c375327b2dd2b/cell_cycle
 # Compute cell cycle score for each cell
@@ -404,7 +423,7 @@ signaturePlot <- function(seurat_object,
 
   g2 <- lapply(g1, function(x) {
     x + fix_params +
-      theme_minimal() + # theme_void()
+      theme_minimal() +
       theme(
         legend.position = "bottom",
         plot.title = element_text(hjust = 0.5)
@@ -460,18 +479,21 @@ g <- signaturePlot(seurat_sctnorm,
 g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
 
-
 # Integration
 
 ## CCA integration
 
-```{r, eval=file.exists("seurat_cca.rds")}
+```{r }
+#| eval: !expr file.exists("seurat_cca.rds")
 # NOTE run the chunck below to create this object, and loading will be used while
 #     knitting to speed up the rendering
 seurat_cca <- readRDS("seurat_cca.rds")
 ```
 
-```{r rna_cca, warning=FALSE, message=FALSE, eval=!exists("seurat_cca")}
+```{r rna_cca}
+#| warning: false
+#| message: false
+#| eval: !expr "!exists('seurat_cca')"
 # NOTE: this should be ran previous rendering to prepare the object
 ## Note that this single command replaces NormalizeData(), ScaleData(), and FindVariableFeatures()
 
@@ -484,7 +506,6 @@ split_sctnorm <- SplitObject(seurat_lognorm, split.by = "orig.ident")
 for (i in 1:length(split_sctnorm)) {
   split_sctnorm[[i]] <- SCTransform(split_sctnorm[[i]],
     vst.flavor = "v2",
-    # vars.to.regress = c("mitoRatio")
     variable.features.n = 3000
   )
 }
@@ -546,17 +567,21 @@ p1 | p2
 
 If cells cluster by sample, condition, batch, dataset, modality, this integration step can greatly improve the clustering and the downstream analyses.
 
-To integrate, we will use the shared highly variable genes (identified using SCTransform) from each group, then, we will “integrate” or “harmonize” the groups to overlay cells that are similar or have a “common set of biological features” between groups. 
+To integrate, we will use the shared highly variable genes (identified using SCTransform) from each group, then, we will “integrate” or “harmonize” the groups to overlay cells that are similar or have a “common set of biological features” between groups.
 
 We use [`Harmony`](https://portals.broadinstitute.org/harmony/articles/quickstart.html), which is based on a transformation of principal components (PCs) to find similarities across datasets. Here we group samples by the original sample id.
 
-```{r rna_hrmny, eval=file.exists("seurat_harmony.rds")}
+```{r rna_hrmny}
+#| eval: !expr file.exists("seurat_harmony.rds")
 # NOTE run the chunck below to create this object, and loading will be used while
 #     knitting to speed up the rendering
 seurat_harmony <- readRDS("seurat_harmony.rds")
 ```
 
-```{r, eval=!exists("seurat_harmony"), warning=FALSE, message=FALSE}
+```{r }
+#| eval: !expr "!exists('seurat_harmony')"
+#| warning: false
+#| message: false
 ## Here seurat will integrate on the level of sample id. If you want to integrate on other aspects the SCT normalization will need to be done with all of the data together.
 # seurat_sctnorm[["RNA"]] <- split(seurat_sctnorm[["RNA"]], f = seurat_sctnorm$orig.ident)
 seurat_harmony <- IntegrateLayers(
@@ -575,9 +600,10 @@ seurat_harmony <- RunUMAP(seurat_harmony,
 saveRDS(seurat_harmony, file = "seurat_harmony.rds")
 ```
 
-## Pre vs. Post integration 
+## Pre vs. Post integration
 
-```{r dimplot_both all,  echo=FALSE}
+```{r dimplot_both all}
+#| echo: false
 p1 <- DimPlot(seurat_sctnorm,
   group.by = "orig.ident",
   reduction = "umap"
@@ -600,7 +626,7 @@ p3 <- DimPlot(seurat_harmony,
 p1 | p2 | p3
 ```
 
-## Clustering 
+## Clustering
 
 For single-modality scRNA-seq analysis, `Seurat` clusters the cells using a Louvain clustering approach. First, a K-nearest neighbor (KNN) graph is built, where cells are connected if they have a similar transcriptome, as determined from their scores on the first PCs. Then, the graph is partitioned into "communities" or "clusters" of interconnected cells that are more tightly connected with each other than with cells outside of the corresponding cluster.
 
@@ -608,15 +634,16 @@ A limitation of this approach is that the number of identified clusters depends 
 
 The code below will generate clusters for resolutions 0.1, 0.2, 0.4, 0.6, 0.8, and 1.0. Note that the names of the cluster will include important information about which slot in seurat was used for clustering.
 
-- Harmony with log normalized data : SNN_res.
+-   Harmony with log normalized data : SNN_res.
 
-- Harmony with SCT normalized data : SCT_res.
+-   Harmony with SCT normalized data : SCT_res.
 
-- CCA : integrated_snn_res.
+-   CCA : integrated_snn_res.
 
 After generating these clusters we will examine them below using a tree based approach and simply overlaying cluster ids onto the umap. We recommend keeping all of the clusters in the metadata as you move forward in case you want to go back and try a different one. To switch between different resolutions you simply need to reset your cell identities to the correct column in the metadata. For example: `Idents(object = seurat_clust) <- "SCT_res.0.2"`
 
-```{r find_neighbors all,  echo=TRUE}
+```{r find_neighbors all}
+#| echo: true
 # NOTE use seurat_harmony or seurat_cca
 # seurat_clust <- FindNeighbors(seurat_harmony, assay = "SCT",
 #                                 reduction = "harmony", dims = 1:40)
@@ -630,11 +657,13 @@ seurat_clust <- FindClusters(
 )
 ```
 
-## Clustering Tree 
+## Clustering Tree
 
-We build a clustering tree using the [clustree](https://lazappi.github.io/clustree/articles/clustree.html) package to show how cells move as the clustering resolution is increased. Each cluster forms a node in the tree and edges are constructed by considering the cells in a cluster at a lower resolution (say 𝑘=2) that end up in a cluster at the next highest resolution (say 𝑘=3). By connecting clusters in this way we can see how clusters are related to each other, which are clearly distinct and which are unstable. The size of each node is related to the number of samples in each cluster and the color indicates the clustering resolution. Edges are colored according to the number of samples they represent and the transparency shows the incoming node proportion, the number of samples in the edge divided by the number of samples in the node it points to. 
+We build a clustering tree using the [clustree](https://lazappi.github.io/clustree/articles/clustree.html) package to show how cells move as the clustering resolution is increased. Each cluster forms a node in the tree and edges are constructed by considering the cells in a cluster at a lower resolution (say 𝑘=2) that end up in a cluster at the next highest resolution (say 𝑘=3). By connecting clusters in this way we can see how clusters are related to each other, which are clearly distinct and which are unstable. The size of each node is related to the number of samples in each cluster and the color indicates the clustering resolution. Edges are colored according to the number of samples they represent and the transparency shows the incoming node proportion, the number of samples in the edge divided by the number of samples in the node it points to.
 
-```{r, fig.height=10, fig.width=8}
+```{r }
+#| fig-height: 10
+#| fig-width: 8
 library(clustree)
 
 meta <- seurat_clust@meta.data
@@ -652,7 +681,7 @@ clustree(meta, prefix = prefix_clu)
 
 ## Visualize clusters {.tabset}
 
-We take a look at how the clusters look at resolutions 0.1, 0.2,0.4, and 0.6 
+We take a look at how the clusters look at resolutions 0.1, 0.2,0.4, and 0.6
 
 ### 0.1
 
@@ -666,7 +695,7 @@ DimPlot(seurat_clust,
 )
 ```
 
-* * *
+------------------------------------------------------------------------
 
 ### 0.2
 
@@ -680,7 +709,7 @@ DimPlot(seurat_clust,
 )
 ```
 
-* * *
+------------------------------------------------------------------------
 
 ### 0.4
 
@@ -694,7 +723,8 @@ DimPlot(seurat_clust,
 )
 ```
 
-* * *
+------------------------------------------------------------------------
+
 ### 0.6
 
 ```{r umap_0.6}
@@ -707,8 +737,7 @@ DimPlot(seurat_clust,
 )
 ```
 
-* * *
-
+------------------------------------------------------------------------
 
 ```{r}
 saveRDS(seurat_clust, file = seurat_output)
@@ -721,4 +750,3 @@ List and version of tools used for the QC report generation.
 ```{r}
 sessionInfo()
 ```
-
