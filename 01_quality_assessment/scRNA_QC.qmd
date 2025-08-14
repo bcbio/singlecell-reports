@@ -64,7 +64,7 @@ sanitize_datatable <- function(df, ...) {
 ```
 
 
-This code is in this ![](https://img.shields.io/badge/status-alpha-yellow) revision.
+This code is in this ![](https://img.shields.io/badge/status-stable-green) revision.
 
 ::: {.callout-note title="READ ME FIRST"}
 
