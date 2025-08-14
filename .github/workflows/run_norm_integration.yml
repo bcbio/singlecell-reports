@@ -78,15 +78,11 @@ jobs:
           cp "$OUTPUT_FILE" /tmp/gh-pages/02_integration/
 
           cd /tmp/gh-pages
+          ls -R .
 
-          # Commit and push if there are changes
-          if git diff --quiet && git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git add 02_integration/norm_integration.html
-            git commit -m "Deploy norm_integration.html [skip ci]"
-            git push origin gh-pages
-          fi
+          git add 02_integration/norm_integration.html
+          git commit -m "Deploy norm_integration.html [skip ci]"
+          git push --force origin gh-pages
 
           # Clean up
           cd -
