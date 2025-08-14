@@ -67,15 +67,15 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          OUTPUT_FILE="01_quality_assessment/scRNA_QC.html"
+          OUTPUT_FILE="02_integration/norm_integration.html"
 
           # Create a temporary worktree for gh-pages branch
           git fetch origin gh-pages || true
           git worktree add /tmp/gh-pages gh-pages || git worktree add /tmp/gh-pages -b gh-pages
 
           # Copy the file to the worktree
-          mkdir -p /tmp/gh-pages/01_quality_assessment
-          cp "$OUTPUT_FILE" /tmp/gh-pages/01_quality_assessment/
+          mkdir -p /tmp/gh-pages/02_integration
+          cp "$OUTPUT_FILE" /tmp/gh-pages/02_integration/
 
           cd /tmp/gh-pages
 
@@ -83,8 +83,8 @@ jobs:
           if git diff --quiet && git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git add 01_quality_assessment/scRNA_QC.html
-            git commit -m "Deploy scRNA_QC.html [skip ci]"
+            git add 02_integration/norm_integration.html
+            git commit -m "Deploy norm_integration.html [skip ci]"
             git push origin gh-pages
           fi
 
