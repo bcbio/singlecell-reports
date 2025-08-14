@@ -3,5 +3,6 @@
 .RData
 .Ruserdata
 *.Rproj
-*.html
-
+**/*.html
+**html
+!01_quality_assessment/scRNA_QC.html
