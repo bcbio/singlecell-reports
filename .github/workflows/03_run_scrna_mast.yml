@@ -91,11 +91,9 @@ jobs:
           cd /tmp/gh-pages
 
           # Commit and push if there are changes
-          if git diff --quiet && git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git add "$(dirname "$OUTPUT_FILE")/$(basename "$OUTPUT_FILE")"
-            git commit -m "Deploy $(basename "$OUTPUT_FILE") [skip ci]"
-            git push origin gh-pages
-          fi
+          
+          git add "$(dirname "$OUTPUT_FILE")/$(basename "$OUTPUT_FILE")"
+          git commit -m "Deploy $(basename "$OUTPUT_FILE") [skip ci]"
+          git push --force origin gh-pages
+        
         shell: bash

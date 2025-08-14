@@ -39,11 +39,13 @@ This template has guidelines on how to work with multiple samples. It compares l
 
 # Differential Expression
 
-Read full documentation at [02_differential_expression/README.md](02_differential_expression/README.md).
+Read full documentation at [03_differential_expression/README.md](03_differential_expression/README.md).
 
--   pseudobulk approach: ![](https://img.shields.io/badge/status-alpha-yellow) [`02_differential_expression/scRNA_pseudobulk.Rmd`](02_differential_expression/scRNA_pseudobulk.Rmd) is a template that performs pseudobulk differential expression analysis using DESeq2.
+-   ![](https://img.shields.io/badge/status-stable-green) [scRNA_pseudobulk](03_differential_expression/scRNA_pseudobulk.qmd) is a template that performs pseudobulk differential expression analysis using DESeq2. 👀 [See an example](https://bcbio.github.io/singlecell-reports/03_differential_expression/scRNA_pseudobulk.html)
 
--   MAST - single cell approach: ![](https://img.shields.io/badge/status-alpha-yellow) [`02_differential_expression/scRNA_MAST.Rmd`](02_differential_expression/scRNA_MAST.Rmd) is a template to visualize differentially expressed genes (DEG) results generated from MAST analysis. \## Compositional Analysis
+- ![](https://img.shields.io/badge/status-stable-green) [MAST scRNA](03_differential_expression/scRNA_MAST.Rmd) is a template to visualize differentially expressed genes (DEG) results generated from MAST analysis. 👀 [See an example](https://bcbio.github.io/singlecell-reports/03_differential_expression/scRNA_MAST.html)
+
+## Compositional Analysis
 
 # Compositional Analysis
 
