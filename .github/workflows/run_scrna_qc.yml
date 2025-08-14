@@ -1,18 +1,18 @@
-name: Normalization and Integration
+name: Quality Control
 
 on:
   push:
     branches: [main]
     paths:
-      - '02_integration/norm_integration.qmd'
+      - '01_quality_assessment/scRNA_QC.qmd'
   pull_request:
     branches: [main]
     paths:
-      - '02_integration/norm_integration.qmd'
+      - '01_quality_assessment/scRNA_QC.qmd'
   workflow_dispatch:
 
 jobs:
-  r-integration:
+  r-qc:
     runs-on: ubuntu-22.04
 
     env:
@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.RENV_PATHS_ROOT }}
-          key: ${{ runner.os }}-renv-${{ hashFiles('02_integration/renv.lock') }}
+          key: ${{ runner.os }}-renv-${{ hashFiles('01_quality_assessment/renv.lock') }}
           restore-keys: |
             ${{ runner.os }}-renv-
 
@@ -48,17 +48,17 @@ jobs:
       - name: Restore environment from renv.lock
         run: |
           install.packages("renv", repos = "https://cloud.r-project.org")
-          renv::restore(prompt = FALSE, lockfile = "02_integration/renv.lock")
+          renv::restore(prompt = FALSE, lockfile = "01_quality_assessment/renv.lock")
         shell: Rscript {0}
      
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
      
-      - name: Run normalization and integration
+      - name: Run quality assessment
         id: render_qmd
         run: |
-          cd 02_integration
-          quarto render norm_integration.qmd
+          cd 01_quality_assessment
+          quarto render scRNA_QC.qmd
         shell: bash
 
       - name: Deploy HTML to gh-pages
@@ -66,7 +66,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
           OUTPUT_FILE="01_quality_assessment/scRNA_QC.html"
 
           # Create a temporary worktree for gh-pages branch

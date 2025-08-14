@@ -27,11 +27,11 @@ Then, the [`scripts/seurat_init.R`](scripts/seurat_init.R) script contains all t
 
 ## scATAC
 
-The Rmd that helps to visualize ATAC metrics is ![](https://img.shields.io/badge/status-alpha-yellow) [`01_quality_assessment/scATAC_QC.Rmd`](01_quality_assessment/scATAC_QC.Rmd).
+The Rmd that helps to visualize ATAC metrics is ![](https://img.shields.io/badge/status-alpha-yellow) [`01_quality_assessment/scATAC_QC.qmd`](01_quality_assessment/scATAC_QC.qmd).
 
-## scRNA
+## ![](https://img.shields.io/badge/status-stable-green) [scRNA quality assessment](01_quality_assessment/scRNA_QC.qmd) 👀 [example]( https://bcbio.github.io/singlecell-reports/01_quality_assessment/scRNA_QC.html)
 
-Currently we are working on deploying a shiny app to inspect the single cell object and find the best cut-offs for filtering. The Rmd that helps to visualize the before and after is ![](https://img.shields.io/badge/status-alpha-yellow) [`01_quality_assessment/scRNA_QC.Rmd`](01_quality_assessment/scRNA_QC.Rmd).
+Currently we are working on deploying a shiny app to inspect the single cell object and find the best cut-offs for filtering. The Rmd that helps to visualize the before and after is ![](https://img.shields.io/badge/status-alpha-yellow) [`01_quality_assessment/scRNA_QC.qmd`](01_quality_assessment/scRNA_QC.qmd).
 
 # Integration
 
