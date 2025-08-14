@@ -27,15 +27,15 @@ Then, the [`scripts/seurat_init.R`](scripts/seurat_init.R) script contains all t
 
 ## scATAC
 
-The Rmd that helps to visualize ATAC metrics is ![](https://img.shields.io/badge/status-alpha-yellow) [`01_quality_assessment/scATAC_QC.Rmd`](01_quality_assessment/scATAC_QC.Rmd).
+The Rmd that helps to visualize ATAC metrics is ![](https://img.shields.io/badge/status-alpha-yellow) [`01_quality_assessment/scATAC_QC.qmd`](01_quality_assessment/scATAC_QC.qmd).
 
-## scRNA
+## ![](https://img.shields.io/badge/status-stable-green) [scRNA quality assessment](01_quality_assessment/scRNA_QC.qmd) 👀 [example](https://bcbio.github.io/singlecell-reports/01_quality_assessment/scRNA_QC.html)
 
-Currently we are working on deploying a shiny app to inspect the single cell object and find the best cut-offs for filtering. The Rmd that helps to visualize the before and after is ![](https://img.shields.io/badge/status-alpha-yellow) [`01_quality_assessment/scRNA_QC.Rmd`](01_quality_assessment/scRNA_QC.Rmd).
+Currently we are working on deploying a shiny app to inspect the single cell object and find the best cut-offs for filtering. This tempalte helps to visualize the before and after is ![](https://img.shields.io/badge/status-alpha-yellow).
 
-# Integration
+# ![](https://img.shields.io/badge/status-stable-green) [scRNA integration](02_integration/norm_integration.qmd) 👀 [example](https://bcbio.github.io/singlecell-reports/02_integration/norm_integration.html)
 
-![](https://img.shields.io/badge/status-alpha-yellow) [`02_integration/norm_integration.rmd`](02_integration/norm_integration.rmd) is a template with guidelines on how to work with multiple samples. It compares log2norm vs SCT, work with SCT by samples to remove batch biases better, provide options for integration between CCA and Harmony. As last step, it contains cell type clustering and visualization to help decide the best parameters.
+This template has guidelines on how to work with multiple samples. It compares log2norm vs SCT, work with SCT by samples to remove batch biases better, provide options for integration between CCA and Harmony. As last step, it contains cell type clustering and visualization to help decide the best parameters.
 
 # Differential Expression
 
