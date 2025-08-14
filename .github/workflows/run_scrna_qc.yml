@@ -66,27 +66,28 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          # Fetch gh-pages branch (create if missing)
           OUTPUT_FILE="01_quality_assessment/scRNA_QC.html"
 
+          # Create a temporary worktree for gh-pages branch
           git fetch origin gh-pages || true
-          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
-            git checkout gh-pages
-            git merge --strategy=ours origin/gh-pages
-          else
-            git checkout --orphan gh-pages
-          fi
+          git worktree add /tmp/gh-pages gh-pages || git worktree add /tmp/gh-pages -b gh-pages
 
-          # Copy the HTML file into place (keep existing files)
-          mkdir -p 01_quality_assessment
-          cp "$OUTPUT_FILE" 01_quality_assessment/
+          # Copy the file to the worktree
+          mkdir -p /tmp/gh-pages/01_quality_assessment
+          cp "$OUTPUT_FILE" /tmp/gh-pages/01_quality_assessment/
 
-          # Commit only if changes exist
-          git add 01_quality_assessment/scRNA_QC.html
-          if git diff --cached --quiet; then
+          cd /tmp/gh-pages
+
+          # Commit and push if there are changes
+          if git diff --quiet && git diff --cached --quiet; then
             echo "No changes to commit"
           else
+            git add 01_quality_assessment/scRNA_QC.html
             git commit -m "Deploy scRNA_QC.html [skip ci]"
             git push origin gh-pages
           fi
+
+          # Clean up
+          cd -
+          git worktree remove /tmp/gh-pages
         shell: bash
