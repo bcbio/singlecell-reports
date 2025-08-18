@@ -55,7 +55,7 @@ jobs:
           
           # Clone MAGIC repository
           cd 06_imputation
-          git clone git://github.com/KrishnaswamyLab/MAGIC.git
+          git clone https://github.com/KrishnaswamyLab/MAGIC.git
           
           # Install MAGIC package
           cd MAGIC/python
