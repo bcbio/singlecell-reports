@@ -65,9 +65,6 @@ jobs:
           # Test MAGIC installation
           python -c "import magic; print('MAGIC version:', magic.__version__)"
 
-          cd ../Rmagic
-          R CMD INSTALL .
-
           cd ../..
         shell: bash
 
@@ -92,11 +89,9 @@ jobs:
         run: |
           source "$(conda info --base)/etc/profile.d/conda.sh"
           conda activate magic_env
+          cd 06_imputation/MAGIC/Rmagic
+          R CMD INSTALL .
           R --slave << 'EOF'
-          if (file.exists("06_imputation/renv/activate.R")) {
-            source("06_imputation/renv/activate.R")
-          }
-          # install.packages("./06_imputation/MAGIC/Rmagic", repos = NULL, type = "source")
           library(Rmagic)
           cat("✓ R MAGIC installed and loaded\n")
           renv::snapshot()
@@ -120,9 +115,20 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin gh-pages || git checkout --orphan gh-pages
-          git switch gh-pages || git checkout -b gh-pages
-          git add 06_imputation/correlation_workflow.html
-          git commit -m "Deploy correlation_workflow.html [skip ci]" || echo "No changes to commit"
-          git push origin gh-pages
+          OUTPUT_FILE="06_imputation/correlation_workflow.html"
+
+          # Fetch gh-pages (if exists) and create worktree
+          git fetch origin gh-pages || true
+          git worktree add /tmp/gh-pages gh-pages 2>/dev/null || git worktree add /tmp/gh-pages -b gh-pages
+
+          # Copy the file into the worktree
+          mkdir -p "/tmp/gh-pages/$(dirname "$OUTPUT_FILE")"
+          cp "$OUTPUT_FILE" "/tmp/gh-pages/$(dirname "$OUTPUT_FILE")/"
+
+          cd /tmp/gh-pages
+
+          # Commit and push if there are changes
+          git add "$(dirname "$OUTPUT_FILE")/$(basename "$OUTPUT_FILE")"
+          git commit -m "Deploy $(basename "$OUTPUT_FILE") [skip ci]"
+          git push --force origin gh-pages
         shell: bash 
