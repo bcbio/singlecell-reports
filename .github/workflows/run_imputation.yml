@@ -48,7 +48,7 @@ jobs:
           conda activate magic_env
           
           # Install compatible packages from conda-forge
-          conda install -y -c conda-forge numpy=1.24.3 pandas=2.0.3 scipy matplotlib
+          conda install -y -c conda-forge numpy=1.24.3 pandas=2.0.3 scipy matplotlib libstdcxx-ng
           
           # Install MAGIC dependencies
           pip install scprep future tasklogger graphtools
