@@ -60,10 +60,15 @@ jobs:
           # Install MAGIC package
           cd MAGIC/python
           pip install .
-          cd ../..
+          
           
           # Test MAGIC installation
           python -c "import magic; print('MAGIC version:', magic.__version__)"
+
+          cd ../Rmagic
+          R CMD INSTALL .
+
+          cd ../..
         shell: bash
 
       - name: Cache R packages (renv)
@@ -91,7 +96,7 @@ jobs:
           if (file.exists("06_imputation/renv/activate.R")) {
             source("06_imputation/renv/activate.R")
           }
-          install.packages("./06_imputation/MAGIC/Rmagic", repos = NULL, type = "source")
+          # install.packages("./06_imputation/MAGIC/Rmagic", repos = NULL, type = "source")
           library(Rmagic)
           cat("✓ R MAGIC installed and loaded\n")
           renv::snapshot()
