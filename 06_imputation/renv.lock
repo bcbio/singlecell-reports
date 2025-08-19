@@ -719,37 +719,6 @@
       "Maintainer": "Dirk Eddelbuettel <edd@debian.org>",
       "Repository": "CRAN"
     },
-    "Rmagic": {
-      "Package": "Rmagic",
-      "Version": "2.0.3.999",
-      "Source": "unknown",
-      "Type": "Package",
-      "Title": "MAGIC - Markov Affinity-Based Graph Imputation of Cells",
-      "Authors@R": "c(person(given = \"David\", family = \"van Dijk\", role = \"aut\", email = \"davidvandijk@gmail.com\"), person(given = \"Scott\", family = \"Gigante\", role = \"cre\", email = \"scott.gigante@yale.edu\", comment = c(ORCID = \"0000-0002-4544-2764\")))",
-      "Maintainer": "Scott Gigante <scott.gigante@yale.edu>",
-      "Description": "MAGIC (Markov affinity-based graph imputation of cells) is a method for addressing technical noise in single-cell data, including under-sampling of mRNA molecules, often termed \"dropout\" which can severely obscure important gene-gene relationships. MAGIC shares information across similar cells, via data diffusion, to denoise the cell count matrix and fill in missing transcripts. Read more: van Dijk et al. (2018) <DOI:10.1016/j.cell.2018.05.061>.",
-      "License": "GPL-2 | file LICENSE",
-      "Depends": [
-        "Matrix (>= 1.2-0)",
-        "R (>= 3.3)"
-      ],
-      "Imports": [
-        "ggplot2",
-        "methods",
-        "reticulate (>= 1.4)",
-        "stats"
-      ],
-      "Suggests": [
-        "phateR",
-        "readr",
-        "Seurat (>= 3.0.0)",
-        "viridis"
-      ],
-      "Encoding": "UTF-8",
-      "LazyData": "true",
-      "RoxygenNote": "7.1.1",
-      "Author": "David van Dijk [aut], Scott Gigante [cre] (ORCID: <https://orcid.org/0000-0002-4544-2764>)"
-    },
     "Rtsne": {
       "Package": "Rtsne",
       "Version": "0.17",
