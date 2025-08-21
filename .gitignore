@@ -1,7 +1,18 @@
 .Rproj.user
-.Rhistory
 .RData
 .Ruserdata
 *.Rproj
-*.html
 
+# Ignore R package environment
+renv/
+**/renv/
+# Ignore R session files
+.Rhistory
+**/.Rhistory
+
+**/*.rds
+**/*_files
+**/*_cache
+**/.Rprofile
+**/.Rmd
+**/*html

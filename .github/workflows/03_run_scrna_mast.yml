@@ -1,0 +1,99 @@
+name: scRNA MAST Analysis
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '03_differential_expression/scRNA_MAST.qmd'
+  pull_request:
+    branches: [main]
+    paths:
+      - '03_differential_expression/scRNA_MAST.qmd'
+  workflow_dispatch:
+
+jobs:
+  r-mast:
+    runs-on: ubuntu-22.04
+
+    env:
+      RENV_PATHS_ROOT: ~/.local/share/renv  # persistent cache location
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install system dependencies for R packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libcurl4-openssl-dev libssl-dev libxml2-dev libgit2-dev libmagick++-dev libharfbuzz-dev libfribidi-dev libglpk-dev
+        shell: bash
+
+      - name: Cache R packages (renv)
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.RENV_PATHS_ROOT }}
+          key: ${{ runner.os }}-renv-${{ hashFiles('03_differential_expression/renv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-renv-
+
+      - name: Set repositories
+        run: Rscript ubuntu.R
+
+      - name: Restore environment from renv.lock
+        run: |
+          install.packages("renv", repos = "https://cloud.r-project.org")
+          renv::restore(prompt = FALSE, lockfile = "03_differential_expression/renv.lock")
+        shell: Rscript {0}
+
+      - name: Run MAST analysis for cluster 2
+        run: |
+          cd 03_differential_expression
+          Rscript MAST_analysis.R \
+            --seurat_obj=https://github.com/bcbio/bcbioR-test-data/raw/refs/heads/main/singlecell/tiny.rds \
+            --resolution_column=integrated_snn_res.0.4 \
+            --cluster_name=2 \
+            --contrast=age \
+            --outputDir=out
+        shell: bash
+ 
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+     
+      - name: Run MAST analysis
+        id: render_qmd
+        run: |
+          cd 03_differential_expression
+          quarto render scRNA_MAST.qmd
+        shell: bash
+
+      - name: Deploy HTML to gh-pages
+        if: success()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          OUTPUT_FILE="03_differential_expression/scRNA_MAST.html"
+
+          # Fetch gh-pages (if exists) and create worktree
+          git fetch origin gh-pages || true
+          git worktree add /tmp/gh-pages gh-pages 2>/dev/null || git worktree add /tmp/gh-pages -b gh-pages
+
+          # Copy the file into the worktree
+          mkdir -p "/tmp/gh-pages/$(dirname "$OUTPUT_FILE")"
+          cp "$OUTPUT_FILE" "/tmp/gh-pages/$(dirname "$OUTPUT_FILE")/"
+
+          cd /tmp/gh-pages
+
+          # Commit and push if there are changes
+          
+          git add "$(dirname "$OUTPUT_FILE")/$(basename "$OUTPUT_FILE")"
+          git commit -m "Deploy $(basename "$OUTPUT_FILE") [skip ci]"
+          git push --force origin gh-pages
+        
+        shell: bash
