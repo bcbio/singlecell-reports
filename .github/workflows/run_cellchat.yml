@@ -31,7 +31,7 @@ jobs:
       - name: Install system dependencies for R packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libcurl4-openssl-dev libssl-dev libxml2-dev libgit2-dev libmagick++-dev libharfbuzz-dev libfribidi-dev libglpk-dev
+          sudo apt-get install -y build-essential cmake libcurl4-openssl-dev libssl-dev libxml2-dev libgit2-dev libmagick++-dev libharfbuzz-dev libfribidi-dev libglpk-dev
         shell: bash
 
       - name: Set up Python with conda
@@ -66,8 +66,10 @@ jobs:
           renv::restore(prompt = FALSE, lockfile = "05_signaling/renv.lock")
         shell: Rscript {0}
 
-      - name: Set up Quarto
+      - name: Set up Quarto (latest)
         uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: latest
 
       - name: Render CellChat report
         id: render_qmd
@@ -85,9 +87,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin gh-pages || git checkout --orphan gh-pages
           git switch gh-pages || git checkout -b gh-pages
-          git add 04_compositional/propeller.html
-          git commit -m "Deploy propeller.html [skip ci]" || echo "No changes to commit"
+          git add 05_signaling/cellchat.html
+          git commit -m "Deploy cellchat.html [skip ci]" || echo "No changes to commit"
           git push origin gh-pages
         shell: bash
-
-
