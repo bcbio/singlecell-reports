@@ -37,8 +37,8 @@ knitr:
     cache.lazy: false
     error: true
     echo: false
-    fig-height: 5L
-    fig.retina: 2L
+    fig-height: 5
+    fig.retina: 2
     fig-width: 11
     message: false
     tidy: true
