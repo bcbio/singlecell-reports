@@ -118,7 +118,7 @@ Read in the full dataset Seurat object and subset to keep only cells from the co
 ```{r load-data}
 library(sccomp)
 data("seurat_obj")
-subset_seurat <- subset(x = seurat_obj, subset = sample %in% c("10x_6K", "SCP424_pbmc1", "SI-GA-G6", "SI-GA-H3"))
+subset_seurat <- subset(x = seurat_obj, subset = sample %in% c("10x_6K", "SCP424_pbmc1","SI-GA-G6","SI-GA-H3"))
 Idents(object = subset_seurat) <- "cell_group"
 DefaultAssay(subset_seurat) <- "RNA"
 
