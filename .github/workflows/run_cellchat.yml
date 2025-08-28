@@ -66,6 +66,13 @@ jobs:
           renv::restore(prompt = FALSE, lockfile = "05_signaling/renv.lock")
         shell: Rscript {0}
 
+      - name: Install presto (fast Wilcoxon for CellChat)
+        run: |
+          Rscript -e "if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes', repos='https://cloud.r-project.org')"
+          Rscript -e "remotes::install_github('immunogenomics/presto')"
+        shell: bash
+
+
       - name: Install Quarto via conda (conda-forge)
         run: |
           # Use the existing conda installation to install quarto so we don't rely on the GitHub release URL
