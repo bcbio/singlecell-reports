@@ -66,17 +66,24 @@ jobs:
           renv::restore(prompt = FALSE, lockfile = "05_signaling/renv.lock")
         shell: Rscript {0}
 
-      - name: Set up Quarto (latest)
-        uses: quarto-dev/quarto-actions/setup@v2
-        with:
-          version: latest
+      - name: Install Quarto via conda (conda-forge)
+        run: |
+          # Use the existing conda installation to install quarto so we don't rely on the GitHub release URL
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate cellchat_env
+          conda install -y -c conda-forge quarto
+          quarto --version || true
+        shell: bash
 
-      - name: Render CellChat report
+      - name: Render CellChat QMD
         id: render_qmd
         run: |
           source "$(conda info --base)/etc/profile.d/conda.sh"
           conda activate cellchat_env
-          cd 05_signaling
+          # Ensure reticulate uses the conda env Python (set explicit env var so R->reticulate picks it up)
+          export RETICULATE_PYTHON=$(which python)
+          echo "RETICULATE_PYTHON=$RETICULATE_PYTHON"
+          cd singlecell-reports/05_signaling
           quarto render cellchat.qmd
         shell: bash
 
