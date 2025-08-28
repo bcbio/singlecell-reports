@@ -250,7 +250,6 @@ df.net %>% sanitize_datatable()
 #| results: 'asis'
 #| fig-width: 8
 #| fig-height: 12
-#| panel: tabset
 
 top_ints <- (df.net %>% pull(interaction_name) %>% unique())[1:10]
 for (interaction in top_ints) {
