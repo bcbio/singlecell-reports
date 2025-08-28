@@ -83,7 +83,7 @@ jobs:
           # Ensure reticulate uses the conda env Python (set explicit env var so R->reticulate picks it up)
           export RETICULATE_PYTHON=$(which python)
           echo "RETICULATE_PYTHON=$RETICULATE_PYTHON"
-          cd singlecell-reports/05_signaling
+          cd 05_signaling
           quarto render cellchat.qmd
         shell: bash
 
