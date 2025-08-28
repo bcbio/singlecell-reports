@@ -252,17 +252,15 @@ if (!file.exists(filename)) {
   # SAVER
   # Generate SAVER predictions for those genes
   genes.ind <- which(rownames(raw_rna) %in% corr_genes)
-  data_saver <- saver(raw_rna,
+  saverD <- raw_rna
+  attr(saverD, "class") <- "matrix"
+  data_saver <- saver(saverD,
     pred.genes = genes.ind,
     pred.genes.only = TRUE,
     estimates.only = TRUE,
     ncores = parallel::detectCores() - 2
   )
 
-  # Ensure SAVER output is a plain matrix with correct dimnames
-  if (!is.matrix(data_saver)) data_saver <- as.matrix(data_saver)
-  if (is.null(rownames(data_saver))) rownames(data_saver) <- rownames(raw_rna)[genes.ind]
-  if (is.null(colnames(data_saver))) colnames(data_saver) <- colnames(raw_rna)
   seurat_imputed[["SAVER"]] <- CreateAssayObject(data = data_saver)
 
   saveRDS(seurat_imputed, filename)
