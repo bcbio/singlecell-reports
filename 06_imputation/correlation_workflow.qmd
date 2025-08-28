@@ -61,7 +61,7 @@ library(gridExtra)
 library(RColorBrewer)
 library(viridis)
 library(SAVER)
-library(Rmagic)
+# library(Rmagic)
 
 invisible(list2env(params, environment()))
 source(project_file)
@@ -106,7 +106,7 @@ min_perc <- 0.2
 
 This report intends to both calculate correlations of gene of interests and also compares how imputation changes those values. 
 
-Throughout this report, we assess two main ways of calculating gene correlations scores (**`Spearman` and `CS-CORE`**). 
+Throughout this report, we assess Spearman correlation estimates.
 
 We further assessed two ways of imputating gene expression values: MAGIC and SAVER.
 
@@ -241,8 +241,13 @@ if (!file.exists(filename)) {
   rm(seurat)
 
   data_magic <- magic(t(raw_rna), genes = corr_genes)$result
-  # magic returns cells x genes; transpose to features x cells
-  seurat_imputed[["MAGIC"]] <- CreateAssayObject(data = t(data_magic))
+  # magic may return a data.frame/tibble or matrix (cells x genes). Force to matrix and transpose to features x cells
+  if (!is.matrix(data_magic)) data_magic <- as.matrix(data_magic)
+  data_magic_t <- t(data_magic)
+  # ensure dimnames align: rows = genes, cols = cells
+  if (is.null(rownames(data_magic_t))) rownames(data_magic_t) <- corr_genes
+  if (is.null(colnames(data_magic_t))) colnames(data_magic_t) <- colnames(raw_rna)
+  seurat_imputed[["MAGIC"]] <- CreateAssayObject(data = data_magic_t)
 
   # SAVER
   # Generate SAVER predictions for those genes
@@ -254,6 +259,10 @@ if (!file.exists(filename)) {
     ncores = parallel::detectCores() - 2
   )
 
+  # Ensure SAVER output is a plain matrix with correct dimnames
+  if (!is.matrix(data_saver)) data_saver <- as.matrix(data_saver)
+  if (is.null(rownames(data_saver))) rownames(data_saver) <- rownames(raw_rna)[genes.ind]
+  if (is.null(colnames(data_saver))) colnames(data_saver) <- colnames(raw_rna)
   seurat_imputed[["SAVER"]] <- CreateAssayObject(data = data_saver)
 
   saveRDS(seurat_imputed, filename)
@@ -398,7 +407,7 @@ plot(cor_comb)
 
 # Compare correlation estimates across methods 
 
-Comparing the correlation scores for each gene pair for MAGIC, SAVER, and CS-CORE.
+Comparing the correlation scores for each gene pair for MAGIC and SAVER.
 
 In these scatterplots, the gene-pairs that are colored red have different results for significance.
 
@@ -441,8 +450,6 @@ grid.arrange(grobs = plot_list, nrow = 3)
 ```
 
 # Method description 
-
-[`CS-CORE`](https://github.com/ChangSuBiostats/CS-CORE) is a R package for cell-type-specific co-expression inference from single cell RNA-sequencing data. It provides an implementation for the statistical method CS-CORE proposed in this [paper](https://www.nature.com/articles/s41467-023-40503-7). 
 
 [`MAGIC`](https://github.com/KrishnaswamyLab/MAGIC) is an algorithm for denoising high-dimensional data most commonly applied to single-cell RNA sequencing data. MAGIC learns the manifold data, using the resultant graph to smooth the features and restore the structure of the data.
 
