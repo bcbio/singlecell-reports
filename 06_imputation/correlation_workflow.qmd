@@ -61,7 +61,7 @@ library(gridExtra)
 library(RColorBrewer)
 library(viridis)
 library(SAVER)
-# library(Rmagic)
+library(Rmagic)
 
 invisible(list2env(params, environment()))
 source(project_file)
