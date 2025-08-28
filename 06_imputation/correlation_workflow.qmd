@@ -60,10 +60,8 @@ library(pheatmap)
 library(gridExtra)
 library(RColorBrewer)
 library(viridis)
-
-library(CSCORE)
 library(SAVER)
-library(Rmagic)
+# library(Rmagic)
 
 invisible(list2env(params, environment()))
 source(project_file)
@@ -218,30 +216,32 @@ We compare three alternative methods of estimating expression levels to log norm
 # Store output so we don't have to re-run imputation each time
 filename <- glue("{path_outs}/imputed.RDS")
 if (!file.exists(filename)) {
-  # Get raw counts
-  raw_rna <- LayerData(seurat, assay = "RNA", layer = "counts")
+  # Get raw counts (genes x cells matrix)
+  raw_rna <- as.matrix(GetAssayData(seurat[["RNA"]], slot = "counts"))
 
   # SCT
   # Re-run SCT on subset data
   seurat <- SCTransform(seurat, return.only.var.genes = FALSE, min_cells = 1)
 
   # Creating new seurat object for genes of interest only
-  data_raw <- FetchData(seurat, assay = "RNA", layer = "counts", vars = corr_genes)
-  data_rna <- FetchData(seurat, assay = "RNA", layer = "data", vars = corr_genes)
-  data_sct <- FetchData(seurat, assay = "SCT", layer = "data", vars = corr_genes)
+  # Use GetAssayData to reliably extract counts/data (features x cells)
+  data_raw <- as.matrix(GetAssayData(seurat[["RNA"]], slot = "counts")[corr_genes, , drop = FALSE])
+  data_rna <- as.matrix(GetAssayData(seurat[["RNA"]], slot = "data")[corr_genes, , drop = FALSE])
+  data_sct <- as.matrix(GetAssayData(seurat[["SCT"]], slot = "data")[corr_genes, , drop = FALSE])
 
   seurat_imputed <- CreateSeuratObject(
-    counts = t(data_raw),
-    data = t(data_rna),
+    counts = data_raw,
+    data = data_rna,
     meta.data = seurat@meta.data
   )
-  seurat_imputed[["SCT"]] <- CreateAssayObject(data = t(data_sct))
+  seurat_imputed[["SCT"]] <- CreateAssayObject(data = data_sct)
   seurat_imputed[["RAW"]] <- CreateAssayObject(counts = raw_rna)
 
   # Delete the original seurat object to save memory
   rm(seurat)
 
   data_magic <- magic(t(raw_rna), genes = corr_genes)$result
+  # magic returns cells x genes; transpose to features x cells
   seurat_imputed[["MAGIC"]] <- CreateAssayObject(data = t(data_magic))
 
   # SAVER
@@ -293,8 +293,7 @@ We have a few different ways to compute correlation scores with their associated
   - `SCTransform` counts -> spearman correlation matrix
   - `MAGIC` imputed -> spearman correlation matrix
   - `SAVER` imputed -> spearman correlation matrix
-2. `CS-CORE`
-    - Raw RNA counts -> co-expression matrix
+2. (removed) `CS-CORE` (this report no longer runs CS-CORE)
 
 ```{r correlations}
 # Store output so we don't have to re-run correlation each time
@@ -321,8 +320,15 @@ if (!file.exists(filename)) {
     gene_2 <- genes_comb[idx, 2]
 
     for (assay_ in assays) {
-      gene_exp <- t(seurat_imputed[[assay_]]$data[c(gene_1, gene_2), ]) %>%
-        as.data.frame()
+      # extract assay data safely (features x cells) and subset to the two genes
+      assay_mat <- tryCatch(as.matrix(GetAssayData(seurat_imputed[[assay_]], slot = "data")), error = function(e) NULL)
+      if (is.null(assay_mat)) {
+        gene_exp <- data.frame()
+      } else {
+        sub_mat <- assay_mat[c(gene_1, gene_2), , drop = FALSE]
+        # transpose to cells x genes for cor.test
+        gene_exp <- as.data.frame(t(sub_mat))
+      }
 
       if (all(gene_exp[[gene_1]] == 0) | all(gene_exp[[gene_2]] == 0)) {
         corr_val <- 0.0
@@ -342,15 +348,7 @@ if (!file.exists(filename)) {
     }
   }
 
-  # Run CS-CORE
-  DefaultAssay(seurat_imputed) <- "RAW"
-  CSCORE_result <- CSCORE(seurat_imputed, genes = corr_genes)
-
-  # Store CS-CORE results
-  tmp <- reshape2::melt(as.matrix(CSCORE_result$est)) %>% rename(CSCORE = value)
-  df_corr <- left_join(df_corr, tmp)
-  tmp <- reshape2::melt(as.matrix(CSCORE_result$p_value)) %>% rename(CSCORE = value)
-  df_p_val <- left_join(df_p_val, tmp)
+  # CS-CORE removed: no additional co-expression estimates are appended here
 
   # Save output
   write.csv(df_corr, filename)
@@ -367,7 +365,7 @@ Showing the patterns of correlation for each method. The x-axis and y-axis are t
 
 ```{r visualize-cors}
 #| fig-width: 7
-methods <- c("RNA", "SCT", "MAGIC", "SAVER", "CSCORE")
+methods <- c("RNA", "SCT", "MAGIC", "SAVER")
 
 cor_List <- purrr::map(methods, \(method){
   corr <- df_corr[c("Var1", "Var2", method)]
@@ -381,9 +379,6 @@ cor_List <- purrr::map(methods, \(method){
 
   breaks <- seq(-1, 1, by = 0.1)
   show_legend <- F
-  if (method == "CSCORE") {
-    show_legend <- T
-  }
   p <- pheatmap(mtx,
     color = inferno(10),
     show_rownames = FALSE,
@@ -410,7 +405,7 @@ In these scatterplots, the gene-pairs that are colored red have different result
 ```{r cor-compare}
 #| fig-width: 3
 #| fig-height: 8
-methods <- c("MAGIC", "SAVER", "CSCORE")
+methods <- c("MAGIC", "SAVER")
 methods_comb <- data.frame(t(combn(methods, 2)))
 plot_list <- list()
 
@@ -460,3 +455,4 @@ List and version of tools used for the QC report generation.
 ```{r}
 sessionInfo()
 ```
+
