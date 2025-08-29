@@ -52,3 +52,7 @@ Read full documentation at [03_differential_expression/README.md](03_differentia
 # Gene Expression Imputation
 
 ![](https://img.shields.io/badge/status-stable-green) [`Imputation Analysis`](05_imputation/imputation.qmd) is a template to run gene expression imputation with two different methods, ALRA and MAGIC. 👀 [See an example](https://bcbio.github.io/singlecell-reports/05_imputation/imputation.html)
+
+# Cell-Cell Interaction
+
+![](https://img.shields.io/badge/status-stable-green) [`Cell-Cell Interaction`](05_signaling/cellchat.qmd) is a template to run cell-cell interaction analysis with CellChat. 👀 [See an example](https://bcbio.github.io/singlecell-reports/05_signaling/cellchat.html)
