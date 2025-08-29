@@ -1,7 +1,7 @@
 install.packages("BiocManager")
 BiocManager::install("renv")
-BiocManager::install('immunogenomics/presto')
-BiocManager::install('sqjin/CellChat')
+BiocManager::install("immunogenomics/presto")
+BiocManager::install("sqjin/CellChat")
 BiocManager::install(renv::dependencies(path = ".")[["Package"]])
 
 create_snapshot <- function(folder, extra_libs = NULL) {
