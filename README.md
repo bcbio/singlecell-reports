@@ -48,3 +48,7 @@ Read full documentation at [03_differential_expression/README.md](03_differentia
 # Compositional Analysis
 
 ![](https://img.shields.io/badge/status-draft-grey) [`04_compositional/propeller.Rmd`](04_compositional/propeller.Rmd) and [`04_compositional/sscomp.Rmd`](04_compositional/sccomp.Rmd) are templates to run compositional analysis with two different methods. `comp.png` is an example of `sccomp.Rmd` analysis.
+
+# Gene Expression Imputation
+
+![](https://img.shields.io/badge/status-stable-green) [`Imputation Analysis`](05_imputation/imputation.qmd) is a template to run gene expression imputation with two different methods, ALRA and MAGIC. 👀 [See an example](https://bcbio.github.io/singlecell-reports/05_imputation/imputation.html)
