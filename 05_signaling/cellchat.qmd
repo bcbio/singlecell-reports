@@ -60,14 +60,14 @@ stopifnot(compareVersion(as.character(BiocManager::version()), "3.18") >= 0)
 stopifnot(compareVersion(as.character(packageVersion("Seurat")), "5.0.0") >= 0)
 ```
 
-This code is in this ![](https://img.shields.io/badge/status-draft-grey) revision.
+This code is in this ![](https://img.shields.io/badge/status-status-green) revision.
 
 
 ```{r}
 library(CellChat)
+library(presto)
 library(tidyverse)
 library(Seurat)
-library(bcbioR)
 library(ggprism)
 library(knitr)
 library(tools)
