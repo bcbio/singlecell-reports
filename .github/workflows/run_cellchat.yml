@@ -90,7 +90,7 @@ jobs:
           export RETICULATE_PYTHON=$(which python)
           echo "RETICULATE_PYTHON=$RETICULATE_PYTHON"
           cd 05_signaling
-          quarto render cellchat.qmd
+          quarto render cellchat.qmd -o cellchat.html
         shell: bash
 
       - name: Deploy HTML to gh-pages
