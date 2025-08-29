@@ -69,7 +69,7 @@ jobs:
       - name: Install presto (fast Wilcoxon for CellChat)
         run: |
           Rscript -e 'install.packages("devtools", repos="https://cloud.r-project.org")'
-          Rscript -e "devtools::install_github("immunogenomics/presto")"
+          Rscript -e 'devtools::install_github("immunogenomics/presto")'
         shell: bash
 
 
