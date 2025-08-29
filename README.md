@@ -27,24 +27,28 @@ Then, the [`scripts/seurat_init.R`](scripts/seurat_init.R) script contains all t
 
 ## scATAC
 
-The Rmd that helps to visualize ATAC metrics is ![](https://img.shields.io/badge/status-alpha-yellow) [`01_quality_assessment/scATAC_QC.Rmd`](01_quality_assessment/scATAC_QC.Rmd).
+The Rmd that helps to visualize ATAC metrics is ![](https://img.shields.io/badge/status-alpha-yellow) [`01_quality_assessment/scATAC_QC.qmd`](01_quality_assessment/scATAC_QC.qmd).
 
-## scRNA
+## ![](https://img.shields.io/badge/status-stable-green) [scRNA quality assessment](01_quality_assessment/scRNA_QC.qmd) 👀 [example](https://bcbio.github.io/singlecell-reports/01_quality_assessment/scRNA_QC.html)
 
-Currently we are working on deploying a shiny app to inspect the single cell object and find the best cut-offs for filtering. The Rmd that helps to visualize the before and after is ![](https://img.shields.io/badge/status-alpha-yellow) [`01_quality_assessment/scRNA_QC.Rmd`](01_quality_assessment/scRNA_QC.Rmd).
+Currently we are working on deploying a shiny app to inspect the single cell object and find the best cut-offs for filtering. This tempalte helps to visualize the before and after is ![](https://img.shields.io/badge/status-alpha-yellow).
 
-# Integration
+# ![](https://img.shields.io/badge/status-stable-green) [scRNA integration](02_integration/norm_integration.qmd) 👀 [example](https://bcbio.github.io/singlecell-reports/02_integration/norm_integration.html)
 
-![](https://img.shields.io/badge/status-alpha-yellow) [`02_integration/norm_integration.rmd`](02_integration/norm_integration.rmd) is a template with guidelines on how to work with multiple samples. It compares log2norm vs SCT, work with SCT by samples to remove batch biases better, provide options for integration between CCA and Harmony. As last step, it contains cell type clustering and visualization to help decide the best parameters.
+This template has guidelines on how to work with multiple samples. It compares log2norm vs SCT, work with SCT by samples to remove batch biases better, provide options for integration between CCA and Harmony. As last step, it contains cell type clustering and visualization to help decide the best parameters.
 
 # Differential Expression
 
-Read full documentation at [02_differential_expression/README.md](02_differential_expression/README.md).
+Read full documentation at [03_differential_expression/README.md](03_differential_expression/README.md).
 
--   pseudobulk approach: ![](https://img.shields.io/badge/status-alpha-yellow) [`02_differential_expression/scRNA_pseudobulk.Rmd`](02_differential_expression/scRNA_pseudobulk.Rmd) is a template that performs pseudobulk differential expression analysis using DESeq2.
+-   ![](https://img.shields.io/badge/status-stable-green) [scRNA_pseudobulk](03_differential_expression/scRNA_pseudobulk.qmd) is a template that performs pseudobulk differential expression analysis using DESeq2. 👀 [See an example](https://bcbio.github.io/singlecell-reports/03_differential_expression/scRNA_pseudobulk.html)
 
--   MAST - single cell approach: ![](https://img.shields.io/badge/status-alpha-yellow) [`02_differential_expression/scRNA_MAST.Rmd`](02_differential_expression/scRNA_MAST.Rmd) is a template to visualize differentially expressed genes (DEG) results generated from MAST analysis. \## Compositional Analysis
+- ![](https://img.shields.io/badge/status-stable-green) [MAST scRNA](03_differential_expression/scRNA_MAST.Rmd) is a template to visualize differentially expressed genes (DEG) results generated from MAST analysis. 👀 [See an example](https://bcbio.github.io/singlecell-reports/03_differential_expression/scRNA_MAST.html)
 
 # Compositional Analysis
 
 ![](https://img.shields.io/badge/status-draft-grey) [`04_compositional/propeller.Rmd`](04_compositional/propeller.Rmd) and [`04_compositional/sscomp.Rmd`](04_compositional/sccomp.Rmd) are templates to run compositional analysis with two different methods. `comp.png` is an example of `sccomp.Rmd` analysis.
+
+# Gene Expression Imputation
+
+![](https://img.shields.io/badge/status-stable-green) [`Imputation Analysis`](05_imputation/imputation.qmd) is a template to run gene expression imputation with two different methods, ALRA and MAGIC. 👀 [See an example](https://bcbio.github.io/singlecell-reports/05_imputation/imputation.html)
