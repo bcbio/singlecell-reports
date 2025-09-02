@@ -1,0 +1,269 @@
+---
+title: "CellChat"
+author: "Harvard Chan Bioinformatics Core"
+date: "`r Sys.Date()`"
+format:
+   html:
+    number-sections: false
+    default-image-extension: svg
+    lightbox: true
+    callout-icon: false
+    format-links: true
+    toc: true
+    theme: sandstone
+    echo: true
+    eval: true
+    message: false
+    warning: false
+    code-copy: true
+    code-overflow: wrap
+    code-fold: true
+    code-line-numbers: true
+    embed-resources: true
+    standalone: true
+    html-math-method: katex
+    grid:
+      sidebar-width: 250px
+      body-width: 900px
+      margin-width: 300px
+    comments:
+      hypothesis: true
+params:
+  seurat_obj: "https://github.com/bcbio/bcbioR-test-data/raw/refs/heads/main/singlecell/tiny.rds"
+  cellchat_fn: snrna_cellchat.qs
+  cellchat_group1_fn: snrna_cellchat_group1.qs
+  cellchat_group2_fn: snrna_cellchat_group2.qs
+  path_outs: cellchat_out
+knitr:
+  opts_chunk:
+    audodep: true
+    cache: false
+    cache.lazy: false
+    error: true
+    echo: false
+    fig-height: 5
+    fig.retina: 2
+    fig-width: 11
+    message: false
+    tidy: true
+    warning: false
+---
+
+```{r}
+#| cache: false
+#| message: false
+#| warning: false
+
+stopifnot(R.version$major >= 4) # requires R4
+stopifnot(compareVersion(R.version$minor, "3.3") >= 0) # requires >=4.3.3
+stopifnot(compareVersion(as.character(BiocManager::version()), "3.18") >= 0)
+stopifnot(compareVersion(as.character(packageVersion("Seurat")), "5.0.0") >= 0)
+```
+
+This code is in this ![](https://img.shields.io/badge/status-status-green) revision.
+
+
+```{r}
+library(CellChat)
+library(presto)
+library(tidyverse)
+library(Seurat)
+library(ggprism)
+library(knitr)
+library(tools)
+library(qs)
+library(patchwork)
+library(ComplexHeatmap)
+library(DT)
+
+options(stringsAsFactors = FALSE)
+
+invisible(list2env(params, environment()))
+
+if (!dir.exists(path_outs)) dir.create(path_outs, recursive = TRUE)
+message("CellChat outputs will be written to: ", path_outs)
+
+
+colors <- cb_friendly_cols(1:15)
+ggplot2::theme_set(theme_prism(base_size = 14))
+
+# set seed for reproducibility
+set.seed(1234567890L)
+
+cellchat_ran <- file.exists(file.path(path_outs, cellchat_fn))
+## detect whether precomputed group CellChat results exist and set flag
+cellchat_rejection_ran <- FALSE
+grp1_basename <- tryCatch(basename(params$cellchat_group1_fn), error = function(e) NA_character_)
+grp2_basename <- tryCatch(basename(params$cellchat_group2_fn), error = function(e) NA_character_)
+if (!is.na(grp1_basename) && nzchar(grp1_basename) && !is.na(grp2_basename) && nzchar(grp2_basename)) {
+  grp1_path <- file.path(path_outs, grp1_basename)
+  grp2_path <- file.path(path_outs, grp2_basename)
+  cellchat_rejection_ran <- file.exists(grp1_path) && file.exists(grp2_path)
+  if (cellchat_rejection_ran) {
+    message("Found precomputed group CellChat results: ", grp1_basename, ", ", grp2_basename)
+  } else {
+    missing <- c(if (!file.exists(grp1_path)) grp1_path else NULL, if (!file.exists(grp2_path)) grp2_path else NULL)
+    message("Precomputed group CellChat results not found; missing: ", paste(missing, collapse = ", "))
+  }
+} else {
+  message("Params for group CellChat filenames not set; cellchat_rejection_ran = FALSE")
+  cellchat_rejection_ran <- FALSE
+}
+```
+
+```{r sanitize-datatable}
+# Create a function to clean up data frames
+sanitize_datatable <- function(df, ...) {
+  # Remove dashes from row names and column names which cause wrapping
+  DT::datatable(df, ...,
+    rownames = gsub("-", "_", rownames(df)),
+    colnames = gsub("-", "_", colnames(df))
+  ) %>%
+    formatRound(columns = names(df)[sapply(df, is.numeric)], digits = 3)
+}
+```
+
+# Clustering
+
+```{r load_data}
+if (exists("seurat_obj") && !is.null(seurat_obj) && nzchar(seurat_obj)) {
+  if (R.utils::isUrl(seurat_obj)) snrna <- readRDS(url(seurat_obj)) else snrna <- readRDS(seurat_obj)
+} else {
+  snrna <- readRDS(params$seurat_fn)
+}
+
+# Detect a normalized assay to use (prefer SCT then RNA)
+available_assays <- names(snrna@assays)
+preferred <- c("SCT", "RNA")
+selected_assay <- intersect(preferred, available_assays)
+if (length(selected_assay) == 0) selected_assay <- DefaultAssay(snrna) else selected_assay <- selected_assay[1]
+message("Using assay for CellChat input: ", selected_assay)
+
+# Detect a metadata column to use as labels
+meta_cols <- colnames(snrna@meta.data)
+label_candidates <- c("Chris_annot", "celltype.age", "age_cluster", "integrated_snn_res.0.4", "cell_type", "seurat_clusters", "orig.ident")
+label_col <- intersect(label_candidates, meta_cols)
+if (length(label_col) == 0) {
+  label_col <- meta_cols[1]
+  warning("No preferred label column found; using first metadata column: ", label_col)
+} else {
+  label_col <- label_col[1]
+}
+message("Using metadata column for labels: ", label_col)
+
+# Ensure UMAP reduction exists; if not, run PCA/FindNeighbors/RunUMAP with defaults
+if (!"umap" %in% names(snrna@reductions)) {
+  message("UMAP not found; running PCA -> FindNeighbors -> RunUMAP with default parameters")
+  # ensure we have variable features or features to run PCA on
+  if (length(VariableFeatures(snrna)) == 0) {
+    tryCatch(
+      {
+        VariableFeatures(snrna) <- rownames(snrna)[1:min(2000, nrow(snrna))]
+      },
+      error = function(e) NULL
+    )
+  }
+  tryCatch(
+    {
+      snrna <- ScaleData(snrna, features = VariableFeatures(snrna))
+      snrna <- RunPCA(snrna, features = VariableFeatures(snrna))
+      snrna <- FindNeighbors(snrna, reduction = "pca", dims = 1:20)
+      snrna <- RunUMAP(snrna, reduction = "pca", dims = 1:20)
+    },
+    error = function(e) warning("Failed to compute UMAP automatically: ", conditionMessage(e))
+  )
+}
+
+# in this case, Chris_annot = cell_type
+DimPlot(snrna, reduction = "umap", group.by = label_col)
+```
+
+```{r prep cellchat inputs}
+#|eval: !expr "!cellchat_ran"
+
+## need to use normalized counts as input (features x cells)
+## use `layer` to avoid deprecation warning; fallback to counts layer if data not present
+data.input <- tryCatch(as.matrix(GetAssayData(snrna[[selected_assay]], layer = "data")),
+  error = function(e) as.matrix(GetAssayData(snrna[[selected_assay]], layer = "counts"))
+)
+labels <- snrna@meta.data[[label_col]]
+meta <- data.frame(labels = labels, row.names = names(labels), samples = snrna$orig.ident)
+```
+
+```{r create cellchat object}
+#| eval: !expr "!cellchat_ran"
+cellchat <- createCellChat(object = data.input, meta = meta, group.by = "labels")
+```
+
+```{r set cellchat db}
+#| eval: !expr "!cellchat_ran"
+CellChatDB <- CellChatDB.human
+CellChatDB.use <- subsetDB(CellChatDB)
+cellchat@DB <- CellChatDB.use
+```
+
+```{r subset and preprocess data}
+#| eval: !expr "!cellchat_ran"
+cellchat <- subsetData(cellchat)
+cellchat <- updateCellChat(cellchat)
+future::plan("multisession", workers = 8) # recommend running with at 8-16 cores
+cellchat <- identifyOverExpressedGenes(cellchat) # may take a couple minutes
+cellchat <- identifyOverExpressedInteractions(cellchat) # may take a couple minutes
+```
+
+```{r compute communication prob}
+#| eval: !expr "!cellchat_ran"
+
+# Not recommended: project gene !expression data onto protein-protein interaction network.
+# Useful with shallow sequencing depth but introduces many weak communications.
+# If used, must set raw.use = FALSE when running computeCommunProb
+# cellchat <- projectData(cellchat, PPI.human)
+
+
+# this next command takes 0.5-2+ hours
+# can choose various methods for caculating average gene exp per group,
+# 'triMean' allegedly produces fewer but stronger interactions
+cellchat <- computeCommunProb(cellchat, type = "triMean")
+
+#  filter out the cell-cell communication if < 50 cells per group
+cellchat <- filterCommunication(cellchat, min.cells = 50)
+
+qsave(cellchat, file.path(path_outs, "snrna_cellchat.qs"), preset = "fast")
+```
+
+# Overall Results 
+
+```{r load cellchat}
+#| eval: !expr "cellchat_ran"
+# read main cellchat from path_outs
+cellchat <- tryCatch(qread(file.path(path_outs, "snrna_cellchat.qs")), error = function(e) qread(params$cellchat_fn))
+```
+
+```{r}
+df.net <- subsetCommunication(cellchat) %>% dplyr::arrange(pval)
+df.net %>% sanitize_datatable()
+```
+
+## Top interactions
+
+```{r check pairs}
+#| results: 'asis'
+#| fig-width: 8
+#| fig-height: 12
+#| panel: tabset
+
+top_ints <- (df.net %>% pull(interaction_name) %>% unique())[1:10]
+for (interaction in top_ints) {
+  cat("\n")
+  cat("### ", as.character(interaction), "\n")
+  interactors <- unlist(strsplit(as.character(interaction), "_"))
+  p1 <- VlnPlot(snrna,
+    features = interactors, group.by = label_col,
+    pt.size = 0.1, log = T, ncol = 1
+  )
+  print(p1)
+  cat("\n")
+}
+```
+
+

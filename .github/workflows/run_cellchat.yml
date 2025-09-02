@@ -1,0 +1,120 @@
+name: CellChat Signaling Workflow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '05_signaling/cellchat.qmd'
+  pull_request:
+    branches: [main]
+    paths:
+      - '05_signaling/cellchat.qmd'
+  workflow_dispatch:
+
+jobs:
+  r-cellchat:
+    runs-on: ubuntu-22.04
+
+    env:
+      RENV_PATHS_ROOT: ~/.local/share/renv
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install system dependencies for R packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libcurl4-openssl-dev libssl-dev libxml2-dev libgit2-dev libmagick++-dev libharfbuzz-dev libfribidi-dev libglpk-dev
+        shell: bash
+
+      - name: Set up Python with conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: 3.9
+          auto-update-conda: true
+
+      - name: Create and activate conda environment and install UMAP
+        run: |
+          conda env remove -n cellchat_env -y 2>/dev/null || true
+          conda create -n cellchat_env python=3.9 -y
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate cellchat_env
+          pip install --no-cache-dir umap-learn
+        shell: bash
+
+      - name: Cache R packages (renv)
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.RENV_PATHS_ROOT }}
+          key: ${{ runner.os }}-renv-${{ hashFiles('05_signaling/renv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-renv-
+
+      - name: Set repositories
+        run: Rscript ubuntu.R
+
+      - name: Restore environment from renv.lock
+        run: |
+          install.packages("renv", repos = "https://cloud.r-project.org")
+          renv::restore(prompt = FALSE, lockfile = "05_signaling/renv.lock")
+        shell: Rscript {0}
+
+      - name: Install presto (fast Wilcoxon for CellChat)
+        run: |
+          Rscript -e 'install.packages("https://github.com/immunogenomics/presto/archive/refs/heads/master.tar.gz", repos=NULL, type="source")'
+        shell: bash
+
+
+      - name: Install Quarto via conda (conda-forge)
+        run: |
+          # Use the existing conda installation to install quarto so we don't rely on the GitHub release URL
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate cellchat_env
+          conda install -y -c conda-forge quarto
+          quarto --version || true
+        shell: bash
+
+      - name: Render CellChat QMD
+        id: render_qmd
+        run: |
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate cellchat_env
+          # Ensure reticulate uses the conda env Python (set explicit env var so R->reticulate picks it up)
+          export RETICULATE_PYTHON=$(which python)
+          echo "RETICULATE_PYTHON=$RETICULATE_PYTHON"
+          cd 05_signaling
+          quarto render cellchat.qmd -o cellchat.html
+        shell: bash
+
+      - name: Deploy HTML to gh-pages
+        if: success()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          OUTPUT_FILE="05_signaling/cellchat.html"
+
+          # Fetch gh-pages (if exists) and create worktree
+          git fetch origin gh-pages || true
+          git worktree add /tmp/gh-pages gh-pages 2>/dev/null || git worktree add /tmp/gh-pages -b gh-pages
+
+          # Copy the file into the worktree
+          mkdir -p "/tmp/gh-pages/$(dirname "$OUTPUT_FILE")"
+          cp "$OUTPUT_FILE" "/tmp/gh-pages/$(dirname "$OUTPUT_FILE")/"
+
+          cd /tmp/gh-pages
+
+          # Commit and push if there are changes
+          git add "$(dirname "$OUTPUT_FILE")/$(basename "$OUTPUT_FILE")"
+          git commit -m "Deploy $(basename "$OUTPUT_FILE") [skip ci]"
+          git push --force origin gh-pages
+        shell: bash
+
+
+
