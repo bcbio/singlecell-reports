@@ -19,12 +19,11 @@ params:
 ---
 
 ```{r, message=FALSE, warning=FALSE}
-# This set up the working directory to this file so all files can be found
+# This sets up the working directory to this file so all files can be found
 library(rstudioapi)
 library(tidyverse)
 setwd(fs::path_dir(getSourceEditorContext()$path))
-# NOTE: This code will check version, this is our recommendation, it may work
-# .      other versions
+# NOTE: This code will check version, this is our recommendation, it may work with other versions
 stopifnot(R.version$major >= 4) # requires R4
 if (compareVersion(R.version$minor, "3.1") < 0) warning("We recommend >= R4.3.1")
 stopifnot(compareVersion(as.character(BiocManager::version()), "3.18") >= 0)
@@ -33,31 +32,37 @@ stopifnot(compareVersion(as.character(packageVersion("Seurat")), "5.0.0") >= 0)
 
 This code is in this ![](https://img.shields.io/badge/status-draft-grey) revision.
 
-
 ```{r setup, cache=FALSE, message=FALSE, warning=FALSE, echo=FALSE}
 # knitr::opts_chunk$set(echo = TRUE)
+
 # Load libraries
+# ... for knitting
 library(knitr)
 library(rmarkdown)
-
+# ... for scRNA
 library(Seurat)
 library(SummarizedExperiment)
 library(SingleCellExperiment)
-library(DEGreport)
-library(pheatmap)
-
+# ... for data wrangling
 library(tidyverse)
 library(data.table)
 library(DT)
+# ... for plotting
+library(DEGreport)
+library(pheatmap)
 library(patchwork)
-
 library(ggprism)
 library(grafify)
-
+library(ggpubr)
+# for multithreading
 library(future)
+# for proportional analysis
 library(speckle)
+library(limma)
+
 # Set seed for reproducibility
 set.seed(1454944673L)
+
 opts_chunk[["set"]](
   audodep = TRUE,
   cache = FALSE,
@@ -98,15 +103,17 @@ sanitize_datatable <- function(df, ...) {
 ```
 
 ## Load object and subset
-Read in the full dataset Seurat object and subset to keep only cells from the conditions of interest (cold7 vs TN).
+Read in the full dataset Seurat object and subset to keep only cells from the conditions of interest.
 
-```{r load-data}
+```{r load_data}
+# load seurat
 seurat <- readRDS("data.rds")
 
+# subset to conditions of interest (change to reflect your dataset)
 subset_seurat <- subset(x = seurat, subset = condition %in% c("Ctrl", "Treat"))
 
+# make sure default assay and idents are what we think they are
 Idents(object = subset_seurat) <- "celltype"
-
 DefaultAssay(subset_seurat) <- "RNA"
 
 # Create metadata df and factor celltype
@@ -114,23 +121,30 @@ meta <- subset_seurat@meta.data
 meta$celltype <- factor(meta$celltype)
 ```
 
-## Check count numbers of cells
+## Count numbers of cells
 
-```{r cellnumbers}
+```{r cell_numbers}
 meta$condition_sample <- paste0(meta$condition, "_", meta$sample)
 table(meta$condition_sample, meta$celltype)
 ```
 
 ## Run propeller
 
-```{r run-propeller}
+We will run `propeller` to test for differences in proportion by [condition of interest]. Briefly, the function will calculate the cell type proportions for each sample, normalize the proportions using a variance-stabilizing transformation, and fit a linear model for the effect of our variable of interest using the `limma` R package. _Note that if you have outliers, you should use the arcsin rather than the default logit transformation._ If there are only two groups, a t-test is used to calculate a p-value for each cell type that says whether the proportion of that cell type is statistically significantly different between the two groups; otherwise, the statistical test used is an ANOVA. Benjamini Hochberg false discovery rate (FDR) correction is then applied for multiple testing. (See the [`propeller` vignette, section 3](https://bioconductor.org/packages/devel/bioc/vignettes/speckle/inst/doc/speckle.html#finding-significant-differences-in-cell-type-proportions-using-propeller) for details.)
+
+```{r run_propeller}
 # working code; takes into account cell numbers
 # NOTE adapt with your variables of interest
+
+# NOTE about transformations
+# see https://phipsonlab.github.io/propeller-paper-analysis/RealDataAnalysis.html#Young_vs_Old
+# "While logit may be more powerful according to the simulations, it appears sensitive to outliers, and in this case we would prefer to use the arcsin square root transform."
+
 propres <- propeller(subset_seurat,
-  sample = subset_seurat$sample,
-  clusters = subset_seurat$celltype,
-  group = subset_seurat$condition
-)
+                     sample = subset_seurat$sample,
+                     clusters = subset_seurat$celltype,
+                     group = subset_seurat$condition,
+                     transform = "logit")
 
 sanitize_datatable(propres)
 ```
@@ -139,29 +153,104 @@ sanitize_datatable(propres)
 
 To understand discordance with sccomp results, let's evaluate proportions and variability within group. 
 
+```{r vst}
+# NOTE about transformations
+# see https://phipsonlab.github.io/propeller-paper-analysis/RealDataAnalysis.html#Young_vs_Old
+# "While logit may be more powerful according to the simulations, it appears sensitive to outliers, and in this case we would prefer to use the arcsin square root transform."
 
-```{r}
 props <- getTransformedProps(meta$celltype,
-  meta$condition_sample,
-  transform = "logit"
-)
+                             meta$condition_sample,
+                             transform = "logit")
 
-props$Proportions
+# props$Proportions
+# props$TransformedProps
 ```
 
-```{r extracode, eval=FALSE}
+## Visualize cell proportions
+
+```{r proportions_viz_sample, fig.height = 8, fig.width = 11}
+# # by sample
+# plotCellTypeProps(seurat,
+#                   sample   = seurat$sample_name,         # biological replicate
+#                   clusters = seurat$celltype_annotation) # cluster or celltype for every cell
+
+# # by age
+# plotCellTypeProps(seurat,
+#                   sample   = seurat$age,                 # biological replicate
+#                   clusters = seurat$celltype_annotation) # cluster or celltype for every cell
+
+props_to_plot <- props$Proportions %>% as.data.frame() %>%
+  # ADD YOUR METADATA: here this is done by exctracting it from the sample name
+  # or you could left_join a metadata DF by "sample"
+  # pull out age / sex / tissue from sample name
+  separate_wider_delim(cols = sample,
+                       delim = "_",
+                       names = c("age", "sex", "tissue", "replicate"),
+                       cols_remove = FALSE) %>%
+  # clean up the proportion to use as a plot label
+  mutate(Freq_label = ifelse(Freq > 0.005, round(Freq, digits = 2), NA))
+
+# by sample -- dotplot
+props_to_plot %>% ggplot(aes(x = age, y = Freq, color = sex, shape = tissue)) +
+  geom_point(position = position_dodge(width = 0.2)) +
+  # wrap long cluster names
+  facet_grid(~ clusters, labeller = labeller(clusters = label_wrap_gen(width = 10))) +
+  ggtitle("Proportions by group")
+
+# by sample -- barplot
+props_to_plot %>%
+  ggplot(aes(x = sample, y = Freq, fill = clusters, label = Freq_label)) +
+  geom_bar(stat = "identity") + # stacked barplot
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) + # rotate x axis labels
+  scale_fill_manual(values = celltype_colors) + # change colors
+  geom_text(position = position_stack(vjust = 0.5), size = 2) + # add %s as labels
+  facet_grid(~ age + tissue, scales = "free") +
+  ggtitle("Proportions by sample")
+
+# by age (or other factor of interest)
+props_to_plot_age <- props_to_plot %>%
+  # summarize frequency by age for labels
+  group_by(age, clusters) %>%
+  summarize(Total_Freq = sum(Freq),
+            Mean_Freq  = mean(Freq)) %>%
+  mutate(Total_Freq_label = ifelse(Total_Freq > 0.005, round(Total_Freq, digits = 2), NA),
+         Mean_Freq_label  = ifelse(Mean_Freq  > 0.005, round(Mean_Freq,  digits = 2), NA))
+plot_total <- props_to_plot_age %>%
+  ggplot(aes(x = age, y = Total_Freq, fill = clusters, label = Total_Freq_label)) +
+  geom_bar(stat = "identity") + # stacked barplot
+  scale_fill_manual(values = celltype_colors) + # change colors
+  geom_text(position = position_stack(vjust = 0.5), size = 2) + # add %s as labels
+  ggtitle("Total proportion by age")
+plot_average <- props_to_plot_age %>%
+  ggplot(aes(x = age, y = Mean_Freq, fill = clusters, label = Mean_Freq_label)) +
+  geom_bar(stat = "identity") + # stacked barplot
+  scale_fill_manual(values = celltype_colors) + # change colors
+  geom_text(position = position_stack(vjust = 0.5), size = 2) + # add %s as labels
+  ggtitle("Mean proportion by age")
+ggarrange(plot_total, plot_average, common.legend = TRUE)
+```
+
+```{r run_propeller_manually, eval=FALSE}
+# get metadata
 meta_propeller <- meta %>%
   group_by(condition, sample) %>%
   distinct(sample)
 
+# set up design matrix
+# NOTE: the group information is always FIRST in the design matrix specification, and there is NO intercept
+# so you can add additional factors like so: designAS <- model.matrix(~ 0 + meta_propeller$age + meta_propeller$sex + meta_propeller$tissue)
 designAS <- model.matrix(~ meta_propeller$condition)
 colnames(designAS) <- c("Ctrl", "Treat")
 
+# run limma manually (without contrasts)
 fit <- lmFit(props$TransformedProps, designAS)
 fit <- eBayes(fit, robust = TRUE)
 
+# the p-value comes from an ANOVA testing whether the variances are the same among all the groups
+# note that the other values are **log2 fold changes, not proportions as before**
 topTable(fit)
 ```
+
 # Resources
 
 * [Speckle vignette](http://127.0.0.1:29356/library/speckle/doc/speckle.html#finding-significant-differences-in-cell-type-proportions-using-propeller)
@@ -169,12 +258,12 @@ topTable(fit)
 
 # Conclusion
 
+
+
 # R session
 
-List and version of tools used for the QC report generation.
+List and version of tools used for the proportion report generation.
 
 ```{r}
 sessionInfo()
 ```
-
-
