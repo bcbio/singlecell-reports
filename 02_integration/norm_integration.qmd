@@ -144,7 +144,7 @@ After filtering, each sample contributed the following number of cells to the an
 table(seurat_qc$orig.ident)
 ```
 
-# Sources of variability Log normalization {.tabset}
+# Sources of variability Log normalization
 
 In this section, we look at potential confounding variables in our (post-QC) dataset, to determine whether their effect needs to be accounted for before normalizing and integrating the data.
 
@@ -181,6 +181,8 @@ seurat_lognorm <- RunUMAP(seurat_lognorm, 1:40)
 
 saveRDS(seurat_lognorm, file = "seurat_lognorm.rds")
 ```
+
+:::{.panel-tabset}
 
 ## Examine highly variable genes
 
@@ -319,7 +321,9 @@ g <- signaturePlot(seurat_lognorm,
 g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
 
-# SCT Normalization {.tabset}
+:::
+
+# SCT Normalization
 
 Now that we have established which effects are observed in our data, we can use the SCTransform method to regress out these effects. The SCTransform method was proposed as a better alternative to the log transform normalization method that we used for exploring sources of unwanted variation. The method not only normalizes data, but it also performs a variance stabilization and allows for additional covariates to be regressed out.
 
@@ -357,6 +361,8 @@ seurat_sctnorm <- RunUMAP(seurat_sctnorm, 1:40)
 
 saveRDS(seurat_sctnorm, file = "seurat_sctnorm.rds")
 ```
+
+:::{.panel-tabset}
 
 ### Look at UMAPs post SCT
 
@@ -478,6 +484,8 @@ g <- signaturePlot(seurat_sctnorm,
 )
 g[[1]] + ggtitle("S1") | g[[2]] + ggtitle("S2")
 ```
+
+:::
 
 # Integration
 
@@ -679,9 +687,11 @@ show_this <- "umap.cca"
 clustree(meta, prefix = prefix_clu)
 ```
 
-## Visualize clusters {.tabset}
+## Visualize clusters
 
 We take a look at how the clusters look at resolutions 0.1, 0.2,0.4, and 0.6
+
+:::{.panel-tabset}
 
 ### 0.1
 
@@ -738,6 +748,8 @@ DimPlot(seurat_clust,
 ```
 
 ------------------------------------------------------------------------
+
+:::
 
 ```{r}
 saveRDS(seurat_clust, file = seurat_output)
