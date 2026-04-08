@@ -582,6 +582,7 @@ seurat_harmony <- readRDS("seurat_harmony.rds")
 #| eval: !expr "!exists('seurat_harmony')"
 #| warning: false
 #| message: false
+# IntegrateLayers creates a PCA-like layer (so do not re-run PCA below before running UMAP)
 ## Here seurat will integrate on the level of sample id. If you want to integrate on other aspects the SCT normalization will need to be done with all of the data together.
 # seurat_sctnorm[["RNA"]] <- split(seurat_sctnorm[["RNA"]], f = seurat_sctnorm$orig.ident)
 seurat_harmony <- IntegrateLayers(
@@ -591,7 +592,6 @@ seurat_harmony <- IntegrateLayers(
   new.reduction = "harmony",
   assay = "SCT", verbose = FALSE
 )
-seurat_harmony <- RunPCA(seurat_harmony)
 seurat_harmony <- RunUMAP(seurat_harmony,
   reduction = "harmony",
   dims = 1:40,
