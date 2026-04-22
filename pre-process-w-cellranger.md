@@ -18,7 +18,7 @@ Here are the steps that need to be completed prior to running cellranger.
 
 #### I have mouse or human
 
-We have prebuilt references for mouse and human located here:
+There are prebuilt references for mouse and human located on O2. For the paths, run `module spider cellranger`.
 
 #### I have another genome
 
@@ -37,7 +37,7 @@ Below is an example script for a non-model reference
 #SBATCH -c 1
 #SBATCH --mem=48G
 
-module load cellranger/7.1.0
+module load cellranger/9.1.0
 
 cellranger mkref \
     --genome=my_nonmodel_genome \
@@ -117,8 +117,8 @@ Here is an example sbatch script for running cellranger as an array
 ```(bash)
 #!/bin/bash
 
-#SBATCH --job-name=CellRangerCount3      # Job name
-#SBATCH --partition=short            # Partition name
+#SBATCH --job-name=CellRangerCount     # Job name
+#SBATCH --partition=short              # Partition name
 #SBATCH --time=0-05:00                 # Runtime in D-HH:MM format
 #SBATCH --nodes=1                      # Number of nodes (keep at 1)
 #SBATCH --ntasks=1                     # Number of tasks per node (keep at 1)
@@ -128,14 +128,15 @@ Here is an example sbatch script for running cellranger as an array
 #SBATCH --output=jobid_%j.out          # File to which STDOUT will be written, including job ID
 
 
-samp=$(awk -v  awkvar="${SLURM_ARRAY_TASK_ID}" 'NR==awkvar' samples.txt)  ### This line will take the numeric slurm array task id and find the corresponding line number in samples.txt. The sample name is made into a variable called samp.
+samp=$(awk -v  awkvar="${SLURM_ARRAY_TASK_ID}" 'NR==awkvar' samples.txt)  ### This line will take the numeric slurm array task id and find the corresponding line number in samples.txt. The sample name is made into a variable called samp. This is also what your output folders will be called.
 
-module load cellranger/7.1.0
+module load cellranger/9.1.0
 
 cellranger count \
-    --id=${samp} \ ## This is what your output folders will be named
+    --id=${samp} \
     --fastqs=/path/to/your/folder/of/fastq/folders/${samp} \
     --transcriptome=/path/to/your/genome \
+    --create-bam=false \
     --localcores=16 \
     --localmem=128 
 
